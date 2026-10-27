@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:/Users/ad/Downloads/WebAppNiniCake/customer-web\" && find src public -type f | head -80 && echo \"--- package.json ---\" && cat package.json)",
+      "Bash(cd \"C:/Users/ad/Downloads/WebAppNiniCake\" && head -60 README.md)",
+      "Bash(cd \"C:/Users/ad/Downloads/WebAppNiniCake/customer-web/src\" && wc -l styles/*.css App.tsx main.tsx components/*.tsx pages/*.tsx pages/account/*.tsx pages/auth/*.tsx)"
+    ]
+  }
+}

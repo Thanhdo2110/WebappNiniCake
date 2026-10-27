@@ -1,0 +1,33 @@
+{
+  "name": "ninicakes",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Nini Cakes - Storefront + Admin + API (Node/Express/TS, React/Vite/TS, MySQL8/Prisma)",
+  "workspaces": [
+    "shared",
+    "server",
+    "customer-web",
+    "admin-web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,customer,admin -c cyan,magenta,yellow \"npm -w server run dev\" \"npm -w customer-web run dev\" \"npm -w admin-web run dev\"",
+    "dev:server": "npm -w server run dev",
+    "dev:customer": "npm -w customer-web run dev",
+    "dev:admin": "npm -w admin-web run dev",
+    "db:up": "docker compose up -d mysql",
+    "db:migrate": "npm -w server run migrate:deploy",
+    "db:seed": "npm -w server run seed",
+    "build": "npm -w server run build && npm -w customer-web run build && npm -w admin-web run build",
+    "typecheck": "npm -w server run build && npm -w customer-web run typecheck && npm -w admin-web run typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "npm -w server run test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "prettier": "^3.4.2",
+    "typescript-eslint": "^8.18.0"
+  }
+}

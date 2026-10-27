@@ -1,0 +1,100 @@
+/* ===== Nini Cakes · Design tokens =====
+   Á-Âu luxury: nền kem ngà, vàng champagne, cacao trầm, nhấn blush/sage mềm. */
+:root {
+  /* Nền & bề mặt */
+  --ivory: #fffdfa;
+  --ivory-2: #fdf8f0;
+  --cream: #fbf6ee;
+  --cream-2: #f4ebe0;
+  --cream-3: #ecdfcf;
+  --card: #ffffff;
+  --porcelain: rgba(255, 253, 250, 0.78);
+
+  /* Nâu cacao */
+  --cocoa: #57402f;
+  --cocoa-2: #6d5340;
+  --cocoa-soft: #755a44;
+  --cocoa-deep: #2e2118;
+  --cocoa-night: #241a13;
+
+  /* Vàng champagne / nhũ vàng */
+  --gold: #c2a06a;
+  --gold-2: #d8bd8f;
+  --gold-3: #ecd9b4;
+  --gold-deep: #8a6a3a;
+  --gold-ink: #6d5127;
+
+  /* Ngọt & mềm */
+  --blush: #e0a3ab;
+  --blush-soft: #f8e6e8;
+  --sage: #a2b8a4;
+  --sage-soft: #eaf0e7;
+  --petal: #f3d9c9;
+
+  /* Chữ */
+  --ink: #33261d;
+  --ink-soft: #6a5747;
+  --ink-faint: #7d6a59;
+  --line: rgba(87, 64, 47, 0.14);
+  --line-2: rgba(87, 64, 47, 0.26);
+  --line-gold: rgba(194, 160, 106, 0.36);
+
+  /* Trạng thái */
+  --ok: #55805a;
+  --warn: #bf8a3c;
+  --err: #b9514f;
+  --info: #6d88a6;
+
+  /* Bóng lớp, ấm */
+  --sh-1: 0 1px 2px rgba(46, 33, 24, 0.04), 0 10px 24px -16px rgba(46, 33, 24, 0.18);
+  --sh-2: 0 2px 6px rgba(46, 33, 24, 0.05), 0 22px 44px -24px rgba(46, 33, 24, 0.24);
+  --sh-3: 0 6px 14px rgba(46, 33, 24, 0.07), 0 40px 80px -32px rgba(46, 33, 24, 0.34);
+  --sh-gold: 0 12px 32px -14px rgba(163, 127, 76, 0.5);
+  --sh-inset: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --ring: 0 0 0 3px rgba(194, 160, 106, 0.32);
+
+  /* Bo góc */
+  --r-xs: 10px;
+  --r-sm: 14px;
+  --r-md: 20px;
+  --r-lg: 28px;
+  --r-xl: 40px;
+  --r-pill: 999px;
+
+ /* Gradient & chất liệu */
+  --foil: linear-gradient(104deg, #b6934f 0%, #e8d3a8 26%, #c2a06a 44%, #f2e5c8 62%, #a37f4c 84%, #d8bd8f 100%);
+  /* Bản tối hơn dùng cho chữ dát vàng (mọi điểm dừng đều ≥3:1 trên nền ngà) */
+  --foil-text: linear-gradient(104deg, #7d5f36 0%, #b08d54 28%, #8a6a3a 48%, #c2a06a 66%, #6d5127 86%, #a37f4c 100%);
+  --foil-soft: linear-gradient(120deg, rgba(236, 217, 180, 0.5), rgba(194, 160, 106, 0.22));
+  --surface-silk: linear-gradient(168deg, #fffdfa 0%, #fbf6ee 42%, #f6ece0 100%);
+  --cocoa-band: linear-gradient(158deg, #35271d 0%, #57402f 46%, #241a13 100%);
+  --sheen: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.72) 50%, transparent 80%);
+
+  /* Hoa văn Á-Âu (dùng với opacity rất thấp) */
+  --pattern-asanoha:
+    repeating-linear-gradient(60deg, rgba(194, 160, 106, 0.16) 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(-60deg, rgba(194, 160, 106, 0.16) 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(0deg, rgba(194, 160, 106, 0.12) 0 1px, transparent 1px 26px);
+  --pattern-seigaiha:
+    radial-gradient(circle at 50% 118%, transparent 0 46%, rgba(194, 160, 106, 0.2) 47% 49%, transparent 50%) 0 0 / 46px 24px,
+    radial-gradient(circle at 50% 118%, transparent 0 30%, rgba(194, 160, 106, 0.14) 31% 33%, transparent 34%) 0 0 / 46px 24px;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+
+  /* Chuyển động */
+  --dur-1: 180ms;
+  --dur-2: 340ms;
+  --dur-3: 620ms;
+  --dur-4: 980ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.42, 0.58, 1);
+
+  /* Chữ */
+  --font-head: 'Playfair Display', 'Times New Roman', Georgia, serif;
+  --font-body: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+  --tracking-eyebrow: 0.16em;
+
+  --container: 1240px;
+  --container-narrow: 880px;
+  --header-h: 78px;
+}

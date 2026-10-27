@@ -1,0 +1,28 @@
+/* ===== Nini Cakes Admin - tokens (tông nền tối rõ ràng) ===== */
+:root {
+  --cream: #fbf7f0;
+  --cream-2: #f2e9dc;
+  --sidebar: #4a3a2c;
+  --sidebar-2: #3d2f24;
+  --card: #ffffff;
+  --cocoa: #5b4636;
+  --cocoa-2: #6f4e37;
+  --champagne: #c9a96e;
+  --champagne-2: #e0c79a;
+  --blush: #e8b4b8;
+  --ok: #5f8d5c;
+  --warn: #c98a3d;
+  --err: #c05b5b;
+  --info: #8fa6b8;
+  --ink: #3d2f24;
+  --ink-soft: #7a6a5c;
+  --line: #e8def0;
+  --line-2: #eadfd1;
+  --shadow-1: 0 2px 8px rgba(91, 70, 54, 0.08);
+  --shadow-2: 0 10px 30px rgba(91, 70, 54, 0.14);
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --font-head: 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-body: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+}

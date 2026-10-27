@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ninicakes-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ninicakes
+      MYSQL_USER: nini
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-nini_secret_2024}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret_2024}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - '3308:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${MYSQL_ROOT_PASSWORD:-root_secret_2024}']
+      interval: 8s
+      timeout: 5s
+      retries: 12
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: ninicakes-server
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - '4000:4000'
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: mysql://nini:${MYSQL_PASSWORD:-nini_secret_2024}@mysql:3306/ninicakes
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev_access_secret_change_me}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev_refresh_secret_change_me}
+      CLIENT_ORIGINS: http://localhost:5173,http://localhost:5174,http://localhost:8080,http://localhost:8081
+      UPLOAD_DIR: /app/uploads
+      SEED_SAMPLE_DATA: 'true'
+    volumes:
+      - uploads_data:/app/uploads
+
+  customer-web:
+    build:
+      context: .
+      dockerfile: customer-web/Dockerfile
+    container_name: ninicakes-customer-web
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - '8080:80'
+
+  admin-web:
+    build:
+      context: .
+      dockerfile: admin-web/Dockerfile
+    container_name: ninicakes-admin-web
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - '8081:80'
+
+volumes:
+  mysql_data:
+  uploads_data:

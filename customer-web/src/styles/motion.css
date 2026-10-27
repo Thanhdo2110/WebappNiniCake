@@ -1,0 +1,231 @@
+/* ===== Nini Cakes · Motion layer =====
+   Toàn bộ chuyển động của storefront: reveal, 3D, nút, ambient, marquee. */
+
+@keyframes nini-rise {
+  from { opacity: 0; transform: translate3d(0, 26px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nini-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes nini-drop {
+  from { opacity: 0; transform: translate3d(0, -10px, 0) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nini-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes nini-ripple {
+  from { transform: scale(0); opacity: 0.4; }
+  to { transform: scale(1); opacity: 0; }
+}
+@keyframes nini-sheen {
+  from { transform: translate3d(-130%, 0, 0) skewX(-18deg); }
+  to { transform: translate3d(130%, 0, 0) skewX(-18deg); }
+}
+@keyframes nini-foil {
+  from { background-position: 0% 50%; }
+  to { background-position: 200% 50%; }
+}
+@keyframes nini-float {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(0, -26px, 0) scale(1.05); }
+}
+@keyframes nini-drift {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(28px, -34px, 0) rotate(16deg); }
+  100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+}
+@keyframes nini-sway {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-6deg); }
+  50% { transform: translate3d(10px, 0, 0) rotate(6deg); }
+}
+@keyframes nini-breathe {
+  from { transform: scale(1.02) translate3d(0, 0, 0); }
+  to { transform: scale(1.1) translate3d(0, -1.5%, 0); }
+}
+@keyframes nini-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+@keyframes nini-shimmer {
+  from { background-position: 220% 0; }
+  to { background-position: -20% 0; }
+}
+@keyframes nini-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes nini-ring {
+  0% { box-shadow: 0 0 0 0 rgba(194, 160, 106, 0.5); }
+  100% { box-shadow: 0 0 0 18px rgba(194, 160, 106, 0); }
+}
+
+/* ---------- 1. Reveals khi cuộn ---------- */
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 26px, 0);
+  transition:
+    opacity var(--dur-3) var(--ease-out),
+    transform var(--dur-3) var(--ease-out),
+    filter var(--dur-3) var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 70ms + var(--d, 0ms));
+  filter: blur(0);
+  will-change: opacity, transform;
+}
+.reveal.in-view { opacity: 1; transform: none; }
+.reveal--soft { transform: translate3d(0, 14px, 0); }
+.reveal--left { transform: translate3d(-32px, 0, 0); }
+.reveal--right { transform: translate3d(32px, 0, 0); }
+.reveal--scale { transform: scale(0.94); }
+.reveal--blur { filter: blur(10px); }
+.reveal--blur.in-view { filter: blur(0); }
+
+/* Lưới sản phẩm / danh sách: tự stagger theo thứ tự DOM */
+.stagger > * { opacity: 0; transform: translate3d(0, 22px, 0); transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out); }
+.stagger.in-view > * { opacity: 1; transform: none; }
+.stagger.in-view > *:nth-child(1) { transition-delay: 0ms; }
+.stagger.in-view > *:nth-child(2) { transition-delay: 70ms; }
+.stagger.in-view > *:nth-child(3) { transition-delay: 140ms; }
+.stagger.in-view > *:nth-child(4) { transition-delay: 210ms; }
+.stagger.in-view > *:nth-child(5) { transition-delay: 280ms; }
+.stagger.in-view > *:nth-child(6) { transition-delay: 350ms; }
+.stagger.in-view > *:nth-child(7) { transition-delay: 420ms; }
+.stagger.in-view > *:nth-child(8) { transition-delay: 490ms; }
+.stagger.in-view > *:nth-child(n + 9) { transition-delay: 560ms; }
+
+/* ---------- 2. Nghiêng 3D + vệt sáng ---------- */
+.tilt-wrap { perspective: 900px; }
+.tilt {
+  transform:
+    rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
+    translate3d(0, var(--ty, 0), var(--tz, 0)) scale(var(--lift, 1));
+  transform-style: preserve-3d;
+  transition:
+    transform var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out);
+}
+.tilt-glare {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  opacity: 0; transition: opacity var(--dur-2) var(--ease-out);
+  background: radial-gradient(340px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.6), transparent 62%);
+}
+.tilt-host:hover .tilt-glare,
+.tilt-host:focus-within .tilt-glare { opacity: 1; }
+.depth { transform: translateZ(34px); }
+.depth-sm { transform: translateZ(16px); }
+
+/* ---------- 3. Nút có chuyển động ---------- */
+.btn {
+  position: relative; isolation: isolate; overflow: hidden;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform var(--dur-1) var(--ease-spring),
+    box-shadow var(--dur-2) var(--ease-out),
+    background-color var(--dur-2) var(--ease-out),
+    color var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out);
+}
+.btn::before {
+  content: ''; position: absolute; top: -20%; bottom: -20%; left: 0; width: 42%;
+  z-index: -1; background: var(--sheen); opacity: 0; pointer-events: none;
+}
+.btn:hover::before, .btn:focus-visible::before { opacity: 1; animation: nini-sheen 900ms var(--ease-out); }
+.btn:hover { transform: translate3d(0, -2px, 0); }
+.btn:active { transform: translate3d(0, 1px, 0) scale(0.975); transition-duration: 70ms; }
+.btn .btn-ico { display: inline-block; transition: transform var(--dur-2) var(--ease-spring); }
+.btn:hover .btn-ico { transform: translate3d(4px, 0, 0); }
+.btn:disabled:hover { transform: none; }
+.btn:disabled::before { display: none; }
+.btn-ripple {
+  position: absolute; z-index: 0; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.18) 60%, transparent 70%);
+  animation: nini-ripple 620ms var(--ease-out) forwards;
+}
+
+/* ---------- 4. Lớp môi trường: blobs, hạt vàng, giấy ---------- */
+.ambient { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.blob {
+  position: absolute; border-radius: 50%; filter: blur(46px); opacity: 0.55;
+  animation: nini-drift var(--dur-blob, 18s) var(--ease-in-out) infinite;
+}
+.petals { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.petal {
+  position: absolute; top: -8%; width: 12px; height: 12px; opacity: 0.5;
+  border-radius: 52% 48% 62% 38% / 45% 55% 45% 55%;
+  background: linear-gradient(140deg, var(--blush), var(--petal));
+  animation: nini-fall var(--dur-fall, 16s) linear var(--delay, 0s) infinite;
+}
+@keyframes nini-fall {
+  0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.6; }
+  100% { transform: translate3d(var(--sway, 40px), 112vh, 0) rotate(520deg); opacity: 0; }
+}
+.grain::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image: var(--grain); opacity: 0.14; mix-blend-mode: multiply;
+}
+.pattern-asanoha { background-image: var(--pattern-asanoha); }
+.pattern-seigaiha { background-image: var(--pattern-seigaiha); }
+
+/* ---------- 5. Chữ dát vàng ---------- */
+.foil-text {
+  background: var(--foil-text) 0 0 / 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  animation: nini-foil 7s var(--ease-in-out) infinite alternate;
+}
+.rule-gold {
+  height: 1px; border: 0;
+  background: linear-gradient(90deg, transparent, var(--line-gold) 18%, var(--gold) 50%, var(--line-gold) 82%, transparent);
+}
+
+/* ---------- 6. Menu bật ra, badge nảy, toast ---------- */
+.drop {
+  transform-origin: top center;
+  animation: nini-drop var(--dur-2) var(--ease-out) both;
+}
+.pop { animation: nini-pop var(--dur-2) var(--ease-spring); }
+.toast--leave { animation: nini-fade var(--dur-1) var(--ease-out) reverse both; }
+
+/* ---------- 7. Khui dần (accordion, form bật/đóng) ---------- */
+.collapsible { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur-3) var(--ease-in-out); }
+.collapsible > * {
+  overflow: hidden; min-height: 0; visibility: hidden; opacity: 0;
+  transition: opacity var(--dur-2) var(--ease-out), visibility 0s linear var(--dur-3);
+}
+.collapsible.is-open { grid-template-rows: 1fr; }
+.collapsible.is-open > * { visibility: visible; opacity: 1; transition-delay: 0s, 0s; }
+.rot { transition: transform var(--dur-2) var(--ease-spring); }
+.rot.is-open { transform: rotate(180deg); }
+.plus-minus { transition: transform var(--dur-2) var(--ease-spring); }
+.plus-minus.is-open { transform: rotate(45deg); }
+
+/* ---------- 8. Chuyển trang ---------- */
+.page { animation: nini-rise var(--dur-3) var(--ease-out) both; }
+
+/* ---------- 9. thanh tiến trình & nút lên đầu ---------- */
+.progress-top {
+  position: fixed; top: 0; left: 0; height: 2px; z-index: 60; pointer-events: none;
+  background: var(--foil); transform-origin: left center;
+  transition: transform 120ms linear;
+}
+.to-top { animation: nini-pop var(--dur-2) var(--ease-spring); }
+
+/* ---------- 10. Giảm chuyển động ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+  html { scroll-behavior: auto; }
+  .reveal, .stagger > * { opacity: 1 !important; transform: none !important; filter: none !important; }
+  .tilt { transform: none !important; }
+  .petals { display: none; }
+}
