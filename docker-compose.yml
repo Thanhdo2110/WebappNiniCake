@@ -80,7 +80,8 @@ services:
       server:
         condition: service_healthy
     ports:
-      - "8080:80"
+      # Chi nginx/Caddy o cung may moi truy cap duoc; khach vao qua 443.
+      - "127.0.0.1:8080:80"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
       interval: 15s
@@ -96,7 +97,8 @@ services:
       server:
         condition: service_healthy
     ports:
-      - "8081:80"
+      # Chi nginx/Caddy o cung may moi truy cap duoc; khach vao qua 443.
+      - "127.0.0.1:8081:80"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
       interval: 15s

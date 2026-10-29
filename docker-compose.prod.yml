@@ -1,0 +1,24 @@
+# ============ Chan production tren VPS ============
+# File NAY KHONG duoc docker compose tu nap (khac voi docker-compose.override.yml),
+# vi vay may dev Windows van chay nhu cu. Len VPS go:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Nhiem vu: them Caddy lam HTTPS tu dong va cho khach vao bang ten mien.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - customer-web
+      - admin-web
+
+volumes:
+  caddy_data:
+  caddy_config:
