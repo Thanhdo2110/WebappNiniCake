@@ -37,9 +37,11 @@ export function errorHandler(err: unknown, _req: Request, res: Response, next: N
     const target = (Array.isArray(raw) ? raw : raw ? [raw] : []).join(', ');
     return res.status(409).json({
       success: false,
-      message: target.includes('email')
-        ? 'Email đã được đăng ký. Vui lòng dùng email khác.'
-        : `Giá trị đã tồn tại${target ? ` (${target})` : ''}.`,
+      message: target.includes('phone')
+        ? 'Số điện thoại đã được đăng ký. Vui lòng dùng số khác hoặc đăng nhập.'
+        : target.includes('email')
+          ? 'Email đã được đăng ký. Vui lòng dùng email khác.'
+          : `Giá trị đã tồn tại${target ? ` (${target})` : ''}.`,
     });
   }
   if (e && e.code === 'P2025') {

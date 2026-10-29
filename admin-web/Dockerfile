@@ -13,7 +13,7 @@ COPY shared ./shared
 COPY admin-web ./admin-web
 RUN npm -w admin-web run build
 
-FROM nginx:1.27-alpine AS run
+FROM nginx:1.27-alpine AS runtime
 COPY admin-web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/admin-web/dist /usr/share/nginx/html
 EXPOSE 80

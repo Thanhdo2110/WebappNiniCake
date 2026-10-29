@@ -1,100 +1,114 @@
-/* ===== Nini Cakes · Design tokens =====
-   Á-Âu luxury: nền kem ngà, vàng champagne, cacao trầm, nhấn blush/sage mềm. */
+﻿/* ===== Nini Cakes Â· Design tokens =====
+   HÆ°á»›ng má»¹ thuáº­t: "PÃ¢tisserie Ã â€“ Ã‚u" â€” kem sá»¯a, há»“ng pháº¥n, trÃ  xanh non
+   vÃ  vÃ ng champagne. Bá» máº·t má»m, Ä‘Æ°á»ng nÃ©t máº£nh, khoáº£ng thá»Ÿ rá»™ng. */
 :root {
-  /* Nền & bề mặt */
-  --ivory: #fffdfa;
-  --ivory-2: #fdf8f0;
-  --cream: #fbf6ee;
-  --cream-2: #f4ebe0;
-  --cream-3: #ecdfcf;
+  /* Ná»n & bá» máº·t */
+  --ivory: #fffefc;
+  --ivory-2: #fdfaf5;
+  --cream: #faf6ef;
+  --cream-2: #f4ece1;
+  --cream-3: #e9dccc;
+  --milk: #fffdf9;
   --card: #ffffff;
-  --porcelain: rgba(255, 253, 250, 0.78);
+  --porcelain: rgba(255, 254, 252, 0.78);
+  --mist: rgba(255, 255, 255, 0.56);
 
-  /* Nâu cacao */
-  --cocoa: #57402f;
-  --cocoa-2: #6d5340;
-  --cocoa-soft: #755a44;
-  --cocoa-deep: #2e2118;
-  --cocoa-night: #241a13;
+  /* NÃ¢u cacao */
+  --cocoa: #4b3629;
+  --cocoa-2: #5f4737;
+  --cocoa-soft: #7a6353;
+  --cocoa-deep: #2f221a;
+  --cocoa-night: #211711;
 
-  /* Vàng champagne / nhũ vàng */
-  --gold: #c2a06a;
-  --gold-2: #d8bd8f;
-  --gold-3: #ecd9b4;
-  --gold-deep: #8a6a3a;
-  --gold-ink: #6d5127;
+  /* VÃ ng champagne / nhÅ© vÃ ng */
+  --gold: #b9925f;
+  --gold-2: #d3b183;
+  --gold-3: #eedcbc;
+  --gold-deep: #8a6a42;
+  --gold-ink: #6f5330;
 
-  /* Ngọt & mềm */
-  --blush: #e0a3ab;
-  --blush-soft: #f8e6e8;
-  --sage: #a2b8a4;
+  /* Ngá»t & má»m */
+  --blush: #d9a3aa;
+  --blush-soft: #f8e8e8;
+  --rose: #c98b93;
+  --berry: #a8606a;
+  --sage: #9eb2a0;
   --sage-soft: #eaf0e7;
-  --petal: #f3d9c9;
+  --pistachio: #b7c4a4;
+  --petal: #f3dacb;
 
-  /* Chữ */
-  --ink: #33261d;
-  --ink-soft: #6a5747;
-  --ink-faint: #7d6a59;
-  --line: rgba(87, 64, 47, 0.14);
-  --line-2: rgba(87, 64, 47, 0.26);
-  --line-gold: rgba(194, 160, 106, 0.36);
+  /* Chá»¯ */
+  --ink: #2c211a;
+  --ink-soft: #4a3a2e;
+  --ink-faint: #6b5a4b;
+  --line: rgba(75, 54, 41, 0.12);
+  --line-2: rgba(75, 54, 41, 0.22);
+  --line-gold: rgba(185, 146, 95, 0.34);
 
-  /* Trạng thái */
-  --ok: #55805a;
-  --warn: #bf8a3c;
-  --err: #b9514f;
-  --info: #6d88a6;
+  /* Tráº¡ng thÃ¡i */
+  --ok: #5b7f5f;
+  --warn: #b9853f;
+  --err: #b25754;
+  --info: #6f87a1;
 
-  /* Bóng lớp, ấm */
-  --sh-1: 0 1px 2px rgba(46, 33, 24, 0.04), 0 10px 24px -16px rgba(46, 33, 24, 0.18);
-  --sh-2: 0 2px 6px rgba(46, 33, 24, 0.05), 0 22px 44px -24px rgba(46, 33, 24, 0.24);
-  --sh-3: 0 6px 14px rgba(46, 33, 24, 0.07), 0 40px 80px -32px rgba(46, 33, 24, 0.34);
-  --sh-gold: 0 12px 32px -14px rgba(163, 127, 76, 0.5);
-  --sh-inset: inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  --ring: 0 0 0 3px rgba(194, 160, 106, 0.32);
+  /* BÃ³ng lá»›p, áº¥m vÃ  ráº¥t nháº¹ */
+  --sh-1: 0 1px 2px rgba(47, 33, 23, 0.03), 0 12px 30px -22px rgba(47, 33, 23, 0.16);
+  --sh-2: 0 2px 8px rgba(47, 33, 23, 0.04), 0 26px 60px -34px rgba(47, 33, 23, 0.22);
+  --sh-3: 0 8px 20px rgba(47, 33, 23, 0.05), 0 48px 100px -48px rgba(47, 33, 23, 0.3);
+  --sh-gold: 0 16px 38px -18px rgba(150, 113, 66, 0.46);
+  --sh-soft: 0 18px 44px -30px rgba(47, 33, 23, 0.28);
+  --sh-inset: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --ring: 0 0 0 3px rgba(185, 146, 95, 0.24);
 
-  /* Bo góc */
-  --r-xs: 10px;
-  --r-sm: 14px;
-  --r-md: 20px;
-  --r-lg: 28px;
-  --r-xl: 40px;
+  /* Bo gÃ³c */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 26px;
+  --r-xl: 38px;
+  --r-2xl: 56px;
   --r-pill: 999px;
 
- /* Gradient & chất liệu */
-  --foil: linear-gradient(104deg, #b6934f 0%, #e8d3a8 26%, #c2a06a 44%, #f2e5c8 62%, #a37f4c 84%, #d8bd8f 100%);
-  /* Bản tối hơn dùng cho chữ dát vàng (mọi điểm dừng đều ≥3:1 trên nền ngà) */
-  --foil-text: linear-gradient(104deg, #7d5f36 0%, #b08d54 28%, #8a6a3a 48%, #c2a06a 66%, #6d5127 86%, #a37f4c 100%);
-  --foil-soft: linear-gradient(120deg, rgba(236, 217, 180, 0.5), rgba(194, 160, 106, 0.22));
-  --surface-silk: linear-gradient(168deg, #fffdfa 0%, #fbf6ee 42%, #f6ece0 100%);
-  --cocoa-band: linear-gradient(158deg, #35271d 0%, #57402f 46%, #241a13 100%);
-  --sheen: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.72) 50%, transparent 80%);
+  /* Gradient & cháº¥t liá»‡u */
+  --foil: linear-gradient(105deg, #a9865a 0%, #e6cfab 26%, #c4a276 46%, #f3e7d1 63%, #a9865a 84%, #d9be95 100%);
+  /* Báº£n tá»‘i hÆ¡n dÃ¹ng cho chá»¯ dÃ¡t vÃ ng */
+  --foil-text: linear-gradient(105deg, #7b5d38 0%, #b08d57 27%, #8a6a3a 48%, #c09a63 66%, #6b4f2b 86%, #a37f4c 100%);
+  --foil-soft: linear-gradient(120deg, rgba(238, 220, 188, 0.52), rgba(185, 146, 95, 0.2));
+  --surface-silk: linear-gradient(166deg, #fffefc 0%, #fbf6ef 46%, #f5ebe0 100%);
+  --surface-mist: linear-gradient(168deg, rgba(255, 255, 255, 0.92), rgba(250, 246, 239, 0.74));
+  --cocoa-band: linear-gradient(158deg, #3a2a20 0%, #4b3629 46%, #211711 100%);
+  --sheen: linear-gradient(100deg, transparent 18%, rgba(255, 255, 255, 0.7) 50%, transparent 82%);
 
-  /* Hoa văn Á-Âu (dùng với opacity rất thấp) */
+  /* Hoa vÄƒn Ã-Ã‚u (dÃ¹ng vá»›i opacity ráº¥t tháº¥p) */
   --pattern-asanoha:
-    repeating-linear-gradient(60deg, rgba(194, 160, 106, 0.16) 0 1px, transparent 1px 26px),
-    repeating-linear-gradient(-60deg, rgba(194, 160, 106, 0.16) 0 1px, transparent 1px 26px),
-    repeating-linear-gradient(0deg, rgba(194, 160, 106, 0.12) 0 1px, transparent 1px 26px);
+    repeating-linear-gradient(60deg, rgba(185, 146, 95, 0.14) 0 1px, transparent 1px 30px),
+    repeating-linear-gradient(-60deg, rgba(185, 146, 95, 0.14) 0 1px, transparent 1px 30px),
+    repeating-linear-gradient(0deg, rgba(185, 146, 95, 0.1) 0 1px, transparent 1px 30px);
   --pattern-seigaiha:
-    radial-gradient(circle at 50% 118%, transparent 0 46%, rgba(194, 160, 106, 0.2) 47% 49%, transparent 50%) 0 0 / 46px 24px,
-    radial-gradient(circle at 50% 118%, transparent 0 30%, rgba(194, 160, 106, 0.14) 31% 33%, transparent 34%) 0 0 / 46px 24px;
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+    radial-gradient(circle at 50% 118%, transparent 0 46%, rgba(185, 146, 95, 0.18) 47% 49%, transparent 50%) 0 0 / 48px 25px,
+    radial-gradient(circle at 50% 118%, transparent 0 30%, rgba(185, 146, 95, 0.12) 31% 33%, transparent 34%) 0 0 / 48px 25px;
+  --pattern-dots: radial-gradient(rgba(185, 146, 95, 0.2) 1px, transparent 1px) 0 0 / 22px 22px;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.38'/%3E%3C/svg%3E");
 
-  /* Chuyển động */
-  --dur-1: 180ms;
-  --dur-2: 340ms;
-  --dur-3: 620ms;
-  --dur-4: 980ms;
+  /* Chuyá»ƒn Ä‘á»™ng */
+  --dur-1: 220ms;
+  --dur-2: 420ms;
+  --dur-3: 760ms;
+  --dur-4: 1100ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-spring: cubic-bezier(0.34, 1.42, 0.58, 1);
+  --ease-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
 
-  /* Chữ */
-  --font-head: 'Playfair Display', 'Times New Roman', Georgia, serif;
+  /* Chá»¯ */
+  --font-head: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+  /* Serif cũ, riêng cho vùng thương hiệu (logo → banner) */
+  --font-display: 'Playfair Display', 'Times New Roman', Georgia, serif;
   --font-body: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
-  --tracking-eyebrow: 0.16em;
+  --tracking-eyebrow: 0.2em;
 
-  --container: 1240px;
-  --container-narrow: 880px;
-  --header-h: 78px;
+  --container: 1280px;
+  --container-narrow: 900px;
+  --header-h: 86px;
+  --header-h-condensed: 66px;
 }

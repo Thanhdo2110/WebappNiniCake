@@ -1,9 +1,10 @@
 /** Thẻ bánh: nghiêng 3D theo con trỏ, ảnh zoom, khung vàng khi rê chuột */
 import { Link } from 'react-router-dom';
 import type { ProductListDTO } from '@shared/types';
+import { ArrowRight } from 'lucide-react';
 import { useTilt } from '../hooks/motion';
 import { formatVND } from '../lib/format';
-import { imageUrl } from '../lib/placeholder';
+import { imageUrl, imgFallback } from '../lib/placeholder';
 import { Stars } from './ui';
 
 export function ProductCard({ p }: { p: ProductListDTO }) {
@@ -19,6 +20,7 @@ export function ProductCard({ p }: { p: ProductListDTO }) {
           <Link to={`/san-pham/${p.slug}`} className="p-card__media img-frame" tabIndex={-1} aria-hidden>
             <img
               src={imageUrl(p.imageUrl, p.name)}
+              onError={imgFallback(p.name)}
               alt={p.name}
               className="img-cover"
               loading="lazy"
@@ -30,7 +32,7 @@ export function ProductCard({ p }: { p: ProductListDTO }) {
               {p.isFeatured && <span className="tag tag-gold">Nổi bật</span>}
               {p.isSeasonal && <span className="tag tag-sage">Theo mùa</span>}
             </span>
-            <span className="p-card__peek">Chọn bánh này</span>
+            <span className="p-card__peek">Chọn bánh này <ArrowRight size={13} /></span>
           </Link>
 
           <div className="p-card__body">

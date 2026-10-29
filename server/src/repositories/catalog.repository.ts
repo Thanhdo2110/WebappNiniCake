@@ -40,8 +40,11 @@ export const catalogRepository = {
   async getIngredient(id: number) {
     return prisma.ingredient.findFirst({ where: { id, deletedAt: null } });
   },
+  /** Tên có unique index nên phải tìm cả bản ghi đã xóa mềm */
   getIngredientByName: (name: string) =>
-    prisma.ingredient.findFirst({ where: { name, deletedAt: null } }),
+    prisma.ingredient.findUnique({ where: { name } }),
+  restoreIngredient: (id: number) =>
+    prisma.ingredient.update({ where: { id }, data: { deletedAt: null } }),
   createIngredient: (data: { name: string; note?: string | null; allergenIds?: number[] }) =>
     prisma.ingredient.create({
       data: {

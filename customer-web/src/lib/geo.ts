@@ -55,6 +55,10 @@ export const embedLink = (p: GeoPoint, zoom = 16): string =>
 export const searchLink = (addressText: string): string =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressText)}`;
 
+/** Bản đồ nhúng theo địa chỉ chữ, không cần key */
+export const embedAddressLink = (addressText: string, zoom = 15): string =>
+  `https://maps.google.com/maps?q=${encodeURIComponent(addressText)}&z=${zoom}&output=embed`;
+
 export function getCurrentPosition(timeoutMs = 12_000): Promise<GeoPoint> {
   return new Promise((resolve, reject) => {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {

@@ -1,4 +1,4 @@
-/** Toast thông báo gọn (không phụ thuộc thư viện ngoài) */
+/** Toast thông báo gọn (không phụ thuộc thư viện ngoài), có nút tắt thủ công */
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
@@ -29,6 +29,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     window.setTimeout(() => setItems((prev) => prev.filter((t) => t.id !== id)), 3560);
   }, []);
 
+  const dismiss = useCallback((id: number) => {
+    setItems((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   const value = useMemo(() => ({ toast }), [toast]);
 
   return (
@@ -41,7 +45,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             role="status"
             className={`toast${t.kind === 'err' ? ' err' : t.kind === 'ok' ? ' ok' : ''}${t.leaving ? ' toast--leave' : ''}`}
           >
-            {t.text}
+            <span className="toast__text">{t.text}</span>
+            <button type="button" className="toast__x" onClick={() => dismiss(t.id)} aria-label="Tắt thông báo">
+              ×
+            </button>
           </div>
         ))}
       </div>

@@ -12,3 +12,6 @@ server/prisma/*.db
 .vite/
 .turbo/
 scripts/shots/
+
+# Hồ sơ Chrome headless dùng cho scripts/shot.mjs
+scripts/.chrome-shot-profile/

@@ -14,9 +14,10 @@ admin-web    (React, :5174) ─┘            └─► /uploads (ảnh) · /api
 ## 1. Chạy nhanh nhất (Docker)
 
 ```bash
-cp .env.example .env          # đổi JWT_ACCESS_SECRET / JWT_REFRESH_SECRET trước khi deploy thật
-docker compose up -d --build  # mysql + server + customer-web + admin-web
+docker compose up -d
 ```
+
+Compose tự build các image, chờ MySQL sẵn sàng, chạy migration/seed trong API rồi mới khởi động hai web. Các giá trị mật khẩu/JWT mặc định chỉ dành cho local; hãy cấu hình `.env` với secrets riêng trước khi triển khai thật.
 
 | Dịch vụ | URL |
 | --- | --- |
@@ -62,9 +63,9 @@ npm run dev                    # server :4000 + customer :5173 + admin :5174
 | --- | --- | --- | --- |
 | Quản trị | `admin@ninicakes.vn` | `Admin@123` | admin-web (đầy đủ quyền, bao gồm xóa cứng & nhân viên) |
 | Nhân viên | `staff@ninicakes.vn` | `Staff@123` | admin-web (không có trang Admin/Settings-Xóa) |
-| Khách | `vy.nguyen@example.com` | `Customer@123` | customer-web (có lịch sử đơn, địa chỉ, đánh giá) |
+| Khách | `0901332201` (số điện thoại) | `Customer@123` | customer-web (có lịch sử đơn, địa chỉ, đánh giá) |
 
-Khách demo còn lại: `khoi.le@`, `ny.tran@`, `huy.pham@`, `linh.do@example.com` — cùng mật khẩu `Customer@123`.
+Khách hàng đăng ký/đăng nhập bằng **số điện thoại + mật khẩu** (mật khẩu từ 4 ký tự, không email). Khách demo còn lại: `0902541188`, `0387745099`, `0764522130`, `0961832774` — cùng mật khẩu `Customer@123`.
 Mã giảm giá đang mở: `WELCOME10` (−10%, tối đa 100.000đ, đơn từ 200.000đ), `NINI150K` (−150.000đ, đơn từ 500.000đ), `SAKURA25` (−25% bánh theo mùa, tối đa 250.000đ).
 
 ## 4. API
@@ -94,7 +95,7 @@ Seed: 7 user · 5 danh mục · 24 sản phẩm · 46 biến thể · 72 ảnh m
 
 ## 6. Đã hoàn thành
 
-**Khách** — trang chủ (banner, danh mục, nổi bật, theo mùa, bán chạy, câu chuyện, đánh giá, đăng ký tin), danh sách bánh (lọc vị/dị ứng giá/sort/tìm kiếm/phân trang), chi tiết (thư viện 3 góc, biến thể, nguyên liệu & dị ứng, đánh giá có phân trang, bánh liên quan), tùy chỉnh bánh (kích cỡ, vị, lời chúc ≤60 ký tự, ghi chú, **ảnh tham khảo**), giỏ hàng khách vãng lai, checkout (giao hàng/tự lấy, ngày + khung giờ, địa chỉ, coupon, COD/chuyển khoản QR), tài khoản (đăng nhập/đăng ký/quên–đặt lại mật khẩu, hồ sơ, đổi mật khẩu, địa chỉ, đơn hàng + theo dõi + hủy, yêu thích, đánh giá của tôi), trang tĩnh Về/Liên hệ (map)/Chính sách/Hỏi đáp, 404.
+**Khách** — trang chủ (banner, danh mục, nổi bật, theo mùa, bán chạy, câu chuyện, đánh giá, đăng ký tin), danh sách bánh (lọc vị/dị ứng giá/sort/tìm kiếm/phân trang), chi tiết (thư viện 3 góc, biến thể, nguyên liệu & dị ứng, đánh giá có phân trang, bánh liên quan), tùy chỉnh bánh (kích cỡ, vị, lời chúc ≤60 ký tự, ghi chú, **ảnh tham khảo**), giỏ hàng khách vãng lai, checkout (giao hàng/tự lấy, ngày + khung giờ, địa chỉ, coupon, COD/chuyển khoản QR), tài khoản (đăng ký/đăng nhập bằng SĐT với mật khẩu từ 4 ký tự, quên–đặt lại mật khẩu, hồ sơ, đổi mật khẩu, địa chỉ, đơn hàng + theo dõi + hủy, yêu thích, đánh giá của tôi), trang tĩnh Về/Liên hệ (map)/Chính sách/Hỏi đáp, 404.
 
 **Admin** — dashboard (KPI, biểu đồ 14 ngày, cảnh báo tồn kho ≤6, đơn chờ), sản phẩm (CRUD + nhiều ảnh + đặt ảnh chính + biến thể + nguyên liệu/dị ứng + soft delete), danh mục, nguyên liệu & dị ứng, đơn hàng (lọc theo trạng thái, đổi trạng thái theo luồng hợp lệ, đổi thanh toán, in phiếu giao bếp, hủy), khách hàng (xem lịch sử, chặn/mở khóa), coupon (validate + giới hạn sử dụng), kiểm duyệt & phản hồi đánh giá, nội dung (banner, bài viết, cài đặt tiệm, tin nhắn/đăng ký), báo cáo (doanh thu, top sản phẩm, khách hàng, đơn hàng + 5 file CSV gồm cả danh sách email đăng ký), nhân viên (đổi role), phân quyền ADMIN/STAFF.
 
@@ -109,7 +110,7 @@ Heading serif (Playfair Display / Cormorant fallback Georgia), body Inter/Be Vie
 
 1. **Tiền là số nguyên VNĐ** (`INT`) ở mọi cột giá — không dùng DECIMAL/float để tránh sai số; `formatVND` định dạng `1.500.000 ₫`.
 2. **Ảnh sản phẩm là SVG minh họa sinh lúc seed** (72 file, 3 góc/bánh) vì không có ảnh thật kèm theo đề bài; admin có thể upload ảnh thật, ảnh upload ghi vào `server/uploads` (hoặc Cloudinary).
-3. **Không có dịch vụ email thật**: mã OTP đặt lại mật khẩu in ra console server (và `resetPassword` chấp nhận mã đó); webhook ngân hàng chưa tích hợp — chuyển khoản được ghi nhận qua `paymentStatus` do admin cập nhật (COD mặc định).
+3. **Không có dịch vụ email/SMS thật**: mã OTP đặt lại mật khẩu (tính theo số điện thoại) in ra console server (và `resetPassword` chấp nhận mã đó); webhook ngân hàng chưa tích hợp — chuyển khoản được ghi nhận qua `paymentStatus` do admin cập nhật (COD mặc định).
 4. **Biến thể là nguồn tồn kho duy nhất**; `product.price` là giá thấp nhất trong các biến thể đang bán, dùng cho lọc/sort.
 5. **Trạng thái đơn theo luồng**: `PENDING → CONFIRMED → PREPARING → SHIPPED/READY → COMPLETED`, có thể `CANCELLED` từ `PENDING/CONFIRMED/PREPARING`; chiều ngược lại bị chặn ở tầng service.
 6. **Hủy đơn**: khách chỉ tự hủy khi đơn chưa sang `SHIPPED/READY/COMPLETED`; admin hủy kèm lý do, hoàn tồn kho trong cùng transaction.

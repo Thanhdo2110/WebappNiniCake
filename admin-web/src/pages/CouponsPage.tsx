@@ -3,8 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { CouponAdminDTO, Paginated } from '@shared/types';
 import { get, post, put, del, errMessage } from '../lib/api';
-import { formatVND, parseAmount } from '../lib/format';
-import { Loading, PageTitle, Empty, Pager, Modal } from '../components/ui';
+import { formatNumber, formatVND, parseAmount } from '../lib/format';
+import { Loading, PageTitle, Empty, Pager, Modal, MoneyInput } from '../components/ui';
 import { useToast } from '../hooks/toast';
 
 interface CouponForm {
@@ -65,9 +65,9 @@ export default function CouponsPage() {
   const openEdit = (c: CouponAdminDTO) => {
     setEditing(c);
     setForm({
-      code: c.code, description: c.description || '', type: c.type, value: String(c.value),
-      minSubtotal: String(c.minSubtotal || 0),
-      maxDiscount: c.maxDiscount ? String(c.maxDiscount) : '',
+      code: c.code, description: c.description || '', type: c.type, value: c.type === 'AMOUNT' ? formatNumber(c.value) : String(c.value),
+      minSubtotal: formatNumber(c.minSubtotal || 0),
+      maxDiscount: c.maxDiscount ? formatNumber(c.maxDiscount) : '',
       maxUses: c.maxUses ? String(c.maxUses) : '',
       startsAt: toLocalInput(c.startsAt), endsAt: toLocalInput(c.endsAt), isActive: c.isActive,
     });
@@ -130,16 +130,23 @@ export default function CouponsPage() {
             </div>
             <div className="field">
               <label>{form.type === 'PERCENT' ? 'Giảm bao nhiêu % (1–100)' : 'Giảm bao nhiêu ₫'}</label>
-              <input className="input" required type="number" min={1} max={form.type === 'PERCENT' ? 100 : 1_000_000_000}
-                value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} />
+              {form.type === 'PERCENT' ? (
+                <input className="input" required type="number" min={1} max={100}
+                  value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} />
+              ) : (
+                <MoneyInput value={form.value} placeholder="VD: 50.000"
+                  onChange={(v) => setForm({ ...form, value: v })} />
+              )}
             </div>
             <div className="field">
-              <label>Đơn tối thiểu (₫)</label>
-              <input className="input" inputMode="numeric" value={form.minSubtotal} onChange={(e) => setForm({ ...form, minSubtotal: e.target.value })} />
+              <label>Đơn tối thiểu</label>
+              <MoneyInput value={form.minSubtotal} placeholder="VD: 300.000"
+                onChange={(v) => setForm({ ...form, minSubtotal: v })} />
             </div>
             <div className="field">
-              <label>Giảm tối đa (₫, để trống = không trần)</label>
-              <input className="input" inputMode="numeric" value={form.maxDiscount} onChange={(e) => setForm({ ...form, maxDiscount: e.target.value })} />
+              <label>Giảm tối đa (để trống = không trần)</label>
+              <MoneyInput value={form.maxDiscount} placeholder="VD: 100.000"
+                onChange={(v) => setForm({ ...form, maxDiscount: v })} />
             </div>
             <div className="field">
               <label>Tổng lượt dùng (trống = vô hạn)</label>

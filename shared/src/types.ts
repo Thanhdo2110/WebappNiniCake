@@ -33,7 +33,8 @@ export interface Paginated<T> {
 /* ============ Tài khoản ============ */
 export interface PublicUserDTO {
   id: number;
-  email: string;
+  /** Khách hàng đăng ký bằng SĐT nên để trống; tài khoản quản trị luôn có email. */
+  email: string | null;
   fullName: string;
   phone: string | null;
   avatarUrl: string | null;
@@ -93,7 +94,6 @@ export interface ProductVariantDTO {
   name: string;
   flavor: string | null;
   price: number;
-  stock: number;
   sku: string | null;
   isActive: boolean;
 }
@@ -173,12 +173,8 @@ export interface ProductReviewsDTO {
   totalCount: number;
 }
 
-export interface ProductDetailPayload extends ProductDetailDTO {
-  totalStock: number;
-}
-
 export interface ProductDetailPageDTO {
-  product: ProductDetailPayload;
+  product: ProductDetailDTO;
   related: ProductListDTO[];
   reviews: ProductReviewsDTO;
 }
@@ -195,12 +191,12 @@ export interface CartItemDTO {
   variantId: number;
   productId: number;
   productName: string;
+  productSlug: string | null;
   variantName: string;
   imageUrl: string | null;
   unitPrice: number;
   quantity: number;
   lineTotal: number;
-  stock: number;
   options: CartItemOptionsDTO | null;
 }
 
@@ -244,7 +240,7 @@ export interface OrderStatusHistoryDTO {
 
 export interface OrderUserBrief {
   id: number;
-  email: string;
+  email: string | null;
   fullName: string;
   phone: string | null;
   avatarUrl: string | null;
@@ -370,6 +366,7 @@ export interface StoreSettingsDTO {
   bankAccountNumber: string;
   shippingFeeVnd: number;
   freeShippingMinVnd: number;
+  payosEnabled?: boolean;
 }
 
 export interface ContactInput {
@@ -378,6 +375,7 @@ export interface ContactInput {
   phone?: string;
   subject?: string;
   content: string;
+  imageUrl?: string;
 }
 
 export interface MessageDTO {
@@ -387,6 +385,7 @@ export interface MessageDTO {
   phone: string | null;
   subject: string | null;
   content: string;
+  imageUrl: string | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -405,14 +404,6 @@ export interface TopProductDTO {
   revenue: number;
 }
 
-export interface LowStockDTO {
-  id: number;
-  productName: string;
-  variantName: string;
-  sku: string | null;
-  stock: number;
-}
-
 export interface DashboardDTO {
   revenueToday: number;
   revenueMonth: number;
@@ -421,7 +412,6 @@ export interface DashboardDTO {
   reviewsPending: number;
   messagesUnread: number;
   customersNewMonth: number;
-  lowStock: LowStockDTO[];
   topProducts: TopProductDTO[];
   recentOrders: RecentOrderDTO[];
   revenueSeries: RevenuePointDTO[];
@@ -446,9 +436,7 @@ export interface HomeDTO {
 }
 
 /* ============ Quản trị sản phẩm ============ */
-export interface AdminProductRow extends ProductListDTO {
-  totalStock: number;
-}
+export type AdminProductRow = ProductListDTO;
 
 /** Danh mục hiển thị ở dropdown admin (kèm số lượng bánh) */
 export interface CategoryAdminDTO extends CategoryDTO {

@@ -46,7 +46,7 @@ export const reportService = {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const last14 = startOfDayAdd(-13);
 
-    const [revToday, revMonth, ordersNewToday, ordersPending, reviewsPending, messagesUnread, customersMonth, lowStock, recent, completed] =
+    const [revToday, revMonth, ordersNewToday, ordersPending, reviewsPending, messagesUnread, customersMonth, recent, completed] =
       await prisma.$transaction([
         prisma.order.aggregate({
           where: { createdAt: { gte: todayStart }, deletedAt: null },
@@ -57,18 +57,22 @@ export const reportService = {
           _sum: { total: true },
         }),
         prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
-        prisma.order.count({ where: { status: { in: ['PENDING', 'CONFIRMED', 'PREPARING'] }, deletedAt: null } }),
+        prisma.order.count({
+          where: {
+            status: { in: ['PENDING', 'CONFIRMED', 'PREPARING'] },
+            deletedAt: null,
+            /* đơn chuyển khoản còn chờ tiền thì chưa tính là đơn cần xử lý */
+            NOT: { paymentMethod: 'BANK_TRANSFER', paymentStatus: 'UNPAID' },
+          },
+        }),
         prisma.review.count({ where: { isApproved: false, deletedAt: null } }),
         prisma.message.count({ where: { isRead: false } }),
         prisma.user.count({ where: { createdAt: { gte: monthStart }, deletedAt: null, role: { name: 'CUSTOMER' } } }),
-        prisma.productVariant.findMany({
-          where: { stock: { lte: 5 }, isActive: true, product: { isActive: true, deletedAt: null } },
-          take: 12,
-          orderBy: { stock: 'asc' },
-          include: { product: { select: { name: true } } },
-        }),
         prisma.order.findMany({
-          where: { deletedAt: null },
+          where: {
+            deletedAt: null,
+            NOT: { paymentMethod: 'BANK_TRANSFER', paymentStatus: 'UNPAID' },
+          },
           orderBy: { createdAt: 'desc' },
           take: 8,
           include: {
@@ -106,13 +110,6 @@ export const reportService = {
       reviewsPending,
       messagesUnread,
       customersNewMonth: customersMonth,
-      lowStock: lowStock.map((v) => ({
-        id: v.id,
-        productName: v.product.name,
-        variantName: v.name,
-        sku: v.sku,
-        stock: v.stock,
-      })),
       topProducts,
       recentOrders: recent.map((o) => ({
         id: o.id,

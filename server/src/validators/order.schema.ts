@@ -47,6 +47,7 @@ export const orderListQuery = z.object({
   search: z.string().trim().max(60).optional(),
   deliveryType: z.string().trim().max(10).optional(),
   paymentMethod: z.string().trim().max(20).optional(),
+  paymentStatus: z.enum(['UNPAID', 'PAID', 'REFUNDED']).optional(),
   deliveryDate: z.string().trim().max(10).optional(),
   from: z.string().trim().max(10).optional(),
   to: z.string().trim().max(10).optional(),

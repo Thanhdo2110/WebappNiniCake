@@ -1,20 +1,29 @@
-/** Trang chủ: banner động, hero có chiều sâu, danh mục, các ray bánh và đánh giá */
-import { useEffect, useState } from 'react';
+/** Trang chủ: hero có chiều sâu, dải cam kết, bộ sưu tập, danh mục, các ray bánh và đánh giá */
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronLeft, ChevronRight, Clock, MapPin, Phone, Quote } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Clock, Gift, MapPin, Phone, Quote, RotateCcw, Sparkles, Truck } from 'lucide-react';
 import { useHome } from '../hooks/catalog';
 import { CardSkeleton, EmptyState, Reveal, SectionTitle, Stagger, Stars } from '../components/ui';
 import { ProductCard } from '../components/ProductCard';
 import { usePointerParallax, prefersReducedMotion } from '../hooks/motion';
 import { useSeo } from '../lib/seo';
-import { imageUrl } from '../lib/placeholder';
+import { imageUrl, imgFallback } from '../lib/placeholder';
 import { formatDate, formatVND } from '../lib/format';
+import { getRecentlyViewed } from '../lib/recent';
+
+const SERVICES = [
+  { icon: Sparkles, title: 'Kem tươi mỗi sáng', text: 'Đánh tay từng mẻ nhỏ, không phẩm màu' },
+  { icon: Truck, title: 'Giao đúng khung giờ', text: 'Sáu khung giờ mỗi ngày, đóng gói giữ mát' },
+  { icon: Gift, title: 'Gói quà tinh tế', text: 'Thiệp viết tay & ribbon miễn phí' },
+];
 
 export default function HomePage() {
-  const { data: home, isLoading } = useHome();
+  const { data: home, isLoading, isError, refetch } = useHome();
   const heroRef = usePointerParallax<HTMLDivElement>();
   const [slide, setSlide] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [recent, setRecent] = useState(() => getRecentlyViewed());
+  const touchX = useRef<number | null>(null);
   const bannerCount = home?.banners.length ?? 0;
 
   useSeo({
@@ -28,7 +37,10 @@ export default function HomePage() {
     return () => window.clearInterval(timer);
   }, [bannerCount, paused]);
 
-  if (isLoading || !home) {
+  /* Đọc lại "đã xem gần đây" mỗi lần quay về trang chủ */
+  useEffect(() => setRecent(getRecentlyViewed()), []);
+
+  if (isLoading || (!home && !isError)) {
     return (
       <div className="container section">
         <SectionTitle eyebrow="Đang mở lò" title="Chúng tôi đang xếp bánh lên kệ…" />
@@ -37,88 +49,41 @@ export default function HomePage() {
     );
   }
 
+  if (isError || !home) {
+    return (
+      <div className="container section">
+        <EmptyState icon="🫖" title="Chưa kết nối được với tiệm">
+          <p className="muted small">Có vẻ đường truyền đang trục trặc. Bạn thử tải lại dữ liệu nhé.</p>
+          <button type="button" className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => refetch()}>
+            <RotateCcw size={15} /> Thử lại
+          </button>
+        </EmptyState>
+      </div>
+    );
+  }
+
   const banners = home.banners;
   const active = Math.min(slide, Math.max(0, banners.length - 1));
-  const heroImage = home.featured[0]?.imageUrl ?? home.bestsellers[0]?.imageUrl ?? null;
+  const heroProduct = home.featured[0] ?? home.bestsellers[0] ?? null;
   const s = home.settings;
+
+  const step = (dir: 1 | -1) => setSlide((n) => (n + dir + banners.length) % banners.length);
+  const onTouchStart = (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchX.current;
+    touchX.current = null;
+    if (Math.abs(delta) > 44) step(delta < 0 ? 1 : -1);
+  };
 
   return (
     <>
-      {banners.length > 0 && (
-        <section className="container" style={{ marginTop: 22 }}>
-          <Reveal from="scale" className="banner">
-            <div
-              className="banner__stage"
-              onMouseEnter={() => setPaused(true)}
-              onMouseLeave={() => setPaused(false)}
-            >
-              {banners.map((b, i) => (
-                <div key={b.id} className={`banner__slide${i === active ? ' is-active' : ''}`}>
-                  {b.imageUrl ? (
-                    <img src={b.imageUrl} alt={b.title} />
-                  ) : (
-                    <div className="banner__fallback" aria-hidden />
-                  )}
-                  <span className="banner__scrim" />
-                  <div className="banner__content">
-                    <span className="eyebrow">Nini Cakes</span>
-                    <h2 style={{ marginTop: 8 }}>{b.title}</h2>
-                    {b.subtitle && <p>{b.subtitle}</p>}
-                    {b.linkUrl && (
-                      <Link
-                        to={b.linkUrl.startsWith('/') ? b.linkUrl : '/banh'}
-                        className="btn btn-gold"
-                        style={{ marginTop: 16 }}
-                      >
-                        Xem ngay <ArrowRight size={15} className="btn-ico" />
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {banners.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    className="banner__arrow banner__arrow--prev"
-                    onClick={() => setSlide((n) => (n - 1 + banners.length) % banners.length)}
-                    aria-label="Banner trước"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    className="banner__arrow banner__arrow--next"
-                    onClick={() => setSlide((n) => (n + 1) % banners.length)}
-                    aria-label="Banner kế tiếp"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                  <div className="banner__nav">
-                    {banners.map((b, i) => (
-                      <button
-                        key={b.id}
-                        type="button"
-                        className={`banner__dot${i === active ? ' is-active' : ''}`}
-                        onClick={() => setSlide(i)}
-                        aria-label={`Xem banner ${i + 1}`}
-                        aria-current={i === active}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </Reveal>
-        </section>
-      )}
-
+      {/* 1. Hero — câu chuyện thương hiệu */}
       <section className="hero grain">
         <div className="ambient" aria-hidden>
-          <span className="blob" style={{ width: 260, height: 260, top: '8%', left: '4%', background: 'radial-gradient(circle, rgba(236,217,180,.85), transparent 70%)' }} />
-          <span className="blob" style={{ width: 300, height: 300, bottom: '4%', right: '10%', background: 'radial-gradient(circle, rgba(248,230,232,.9), transparent 70%)', animationDelay: '2s' }} />
-          <span className="blob" style={{ width: 190, height: 190, top: '38%', right: '42%', background: 'radial-gradient(circle, rgba(234,240,231,.9), transparent 70%)', animationDelay: '4s' }} />
+          <span className="blob" style={{ width: 280, height: 280, top: '8%', left: '3%', background: 'radial-gradient(circle, rgba(238,220,188,.8), transparent 70%)' }} />
+          <span className="blob" style={{ width: 320, height: 320, bottom: '2%', right: '8%', background: 'radial-gradient(circle, rgba(248,232,232,.85), transparent 70%)', animationDelay: '2s' }} />
+          <span className="blob" style={{ width: 200, height: 200, top: '34%', right: '44%', background: 'radial-gradient(circle, rgba(234,240,231,.85), transparent 70%)', animationDelay: '4s' }} />
         </div>
 
         <div className="container hero__inner" ref={heroRef}>
@@ -170,7 +135,8 @@ export default function HomePage() {
             <span className="hero__plate pattern-asanoha" aria-hidden />
             <div className="hero__card ken-burns">
               <img
-                src={imageUrl(heroImage, 'Bánh kem Nini Cakes')}
+                src={imageUrl(heroProduct?.imageUrl, 'Bánh kem Nini Cakes')}
+                onError={imgFallback('Bánh kem Nini Cakes')}
                 alt="Bánh kem Nini Cakes"
                 className="img-cover"
               />
@@ -179,10 +145,33 @@ export default function HomePage() {
               <b>Á – Âu</b>
               <span>thủ công mỗi ngày</span>
             </div>
+            {heroProduct && (
+              <Link to={`/san-pham/${heroProduct.slug}`} className="hero__tag">
+                <span className="hero__tag-label">Món của tuần</span>
+                <b>{heroProduct.name}</b>
+                <span className="hero__tag-price">
+                  {formatVND(heroProduct.price)} <ArrowRight size={14} />
+                </span>
+              </Link>
+            )}
           </Reveal>
         </div>
       </section>
 
+      {/* 2. Dải cam kết — nổi nhẹ trên nền hero */}
+      <section className="container service-strip" aria-label="Cam kết của tiệm">
+        {SERVICES.map(({ icon: Icon, title, text }) => (
+          <div className="service-card" key={title}>
+            <span className="service-card__icon"><Icon size={19} /></span>
+            <div>
+              <b>{title}</b>
+              <span>{text}</span>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* 3. Ribbon chạy */}
       <section className="ribbon" aria-hidden>
         <div className="ribbon__track">
           {[0, 1].map((dup) => (
@@ -193,10 +182,14 @@ export default function HomePage() {
               <span className="ribbon__dot">✦</span>
               <span className="ribbon__item">Cacao nhập khẩu</span>
               <span className="ribbon__dot">✦</span>
-              <span className="ribbon__item">
-                Miễn phí giao từ {formatVND(s.freeShippingMinVnd)}
-              </span>
-              <span className="ribbon__dot">✦</span>
+              {s.freeShippingMinVnd > 0 && (
+                <>
+                  <span className="ribbon__item">
+                    Miễn phí giao từ {formatVND(s.freeShippingMinVnd)}
+                  </span>
+                  <span className="ribbon__dot">✦</span>
+                </>
+              )}
               <span className="ribbon__item">{s.openingHours}</span>
               <span className="ribbon__dot">✦</span>
             </div>
@@ -204,7 +197,92 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="container section">
+      {/* 4. Bộ sưu tập / banner */}
+      {banners.length > 0 && (
+        <section className="container section section--flush-top">
+          <SectionTitle
+            eyebrow="Bộ sưu tập"
+            title="Câu chuyện mùa này"
+            subtitle="Chiến dịch và ưu đãi mới nhất từ tiệm"
+            action={
+              <Link to="/banh" className="btn btn-soft btn-sm">
+                Xem thực đơn <ArrowRight size={14} className="btn-ico" />
+              </Link>
+            }
+          />
+          <Reveal from="scale" className="banner">
+            <div
+              className="banner__stage"
+              onMouseEnter={() => setPaused(true)}
+              onMouseLeave={() => setPaused(false)}
+              onTouchStart={onTouchStart}
+              onTouchEnd={onTouchEnd}
+              aria-live={paused || prefersReducedMotion() ? 'polite' : 'off'}
+            >
+              {banners.map((b, i) => (
+                <div key={b.id} className={`banner__slide${i === active ? ' is-active' : ''}`}>
+                  {b.imageUrl ? (
+                    <img src={b.imageUrl} alt={b.title} />
+                  ) : (
+                    <div className="banner__fallback" aria-hidden />
+                  )}
+                  <span className="banner__scrim" />
+                  <div className="banner__content">
+                    <span className="eyebrow">Nini Cakes</span>
+                    <h2 style={{ marginTop: 8 }}>{b.title}</h2>
+                    {b.subtitle && <p>{b.subtitle}</p>}
+                    {b.linkUrl && (
+                      <Link
+                        to={b.linkUrl.startsWith('/') ? b.linkUrl : '/banh'}
+                        className="btn btn-gold"
+                        style={{ marginTop: 16 }}
+                      >
+                        Xem ngay <ArrowRight size={15} className="btn-ico" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {banners.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="banner__arrow banner__arrow--prev"
+                    onClick={() => step(-1)}
+                    aria-label="Banner trước"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    className="banner__arrow banner__arrow--next"
+                    onClick={() => step(1)}
+                    aria-label="Banner kế tiếp"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                  <div className="banner__nav">
+                    {banners.map((b, i) => (
+                      <button
+                        key={b.id}
+                        type="button"
+                        className={`banner__dot${i === active ? ' is-active' : ''}`}
+                        onClick={() => setSlide(i)}
+                        aria-label={`Xem banner ${i + 1}`}
+                        aria-current={i === active}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </Reveal>
+        </section>
+      )}
+
+      {/* 5. Danh mục */}
+      <section className="container section" id="thuc-don">
         <SectionTitle
           eyebrow="Danh mục"
           title="Chọn theo dịp"
@@ -276,6 +354,26 @@ export default function HomePage() {
           <Stagger className="grid-products grid-products--wide">
             {home.bestsellers.slice(0, 8).map((p) => (
               <ProductCard key={p.id} p={p} />
+            ))}
+          </Stagger>
+        </section>
+      )}
+
+      {recent.length > 0 && (
+        <section className="container section">
+          <SectionTitle
+            eyebrow="Dành riêng cho bạn"
+            title="Đã xem gần đây"
+            subtitle="Những chiếc bánh bạn vừa ghé qua — tìm lại ngay kẻo lỡ"
+            action={
+              <Link to="/banh" className="btn btn-soft btn-sm">
+                Xem thực đơn <ArrowRight size={14} className="btn-ico" />
+              </Link>
+            }
+          />
+          <Stagger className="grid-products">
+            {recent.slice(0, 4).map((p) => (
+              <ProductCard key={`recent-${p.id}`} p={p} />
             ))}
           </Stagger>
         </section>

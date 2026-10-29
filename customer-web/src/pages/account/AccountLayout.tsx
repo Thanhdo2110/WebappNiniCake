@@ -1,8 +1,9 @@
-/** Bố cục khu vực tài khoản: menu trái có chỉ báo động + lời chào */
-import { NavLink, Outlet } from 'react-router-dom';
-import { Crown, Heart, MapPin, Receipt, Star, UserRound } from 'lucide-react';
+/** Bố cục khu vực tài khoản: menu trái có chỉ báo động + lời chào + đăng xuất */
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Crown, Heart, LogOut, MapPin, Receipt, Star, UserRound } from 'lucide-react';
 import { useAuth } from '../../hooks/auth';
 import { useSeo } from '../../lib/seo';
+import { useToast } from '../../hooks/toast';
 import { Reveal } from '../../components/ui';
 
 const items = [
@@ -14,7 +15,9 @@ const items = [
 ];
 
 export default function AccountLayout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   useSeo({ title: 'Tài khoản của tôi', description: 'Quản lý hồ sơ, đơn hàng và địa chỉ trên Nini Cakes.' });
   const name = user?.fullName?.trim().split(/\s+/).pop() || 'bạn';
 
@@ -38,6 +41,17 @@ export default function AccountLayout() {
             </NavLink>
           ))}
         </nav>
+        <button
+          type="button"
+          className="account-logout"
+          onClick={async () => {
+            await logout();
+            toast('Đã đăng xuất. Hẹn gặp lại!', 'ok');
+            navigate('/');
+          }}
+        >
+          <LogOut size={15} /> Đăng xuất
+        </button>
       </Reveal>
       <section className="account-content">
         <Outlet />

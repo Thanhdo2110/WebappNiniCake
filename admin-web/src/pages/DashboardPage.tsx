@@ -75,7 +75,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 14 }}>
         <div className="card pad">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <h3 style={{ fontSize: 15 }}>Đơn gần đây</h3>
@@ -101,24 +100,6 @@ export default function DashboardPage() {
             </table>
           </div>
         </div>
-
-        <div className="card pad">
-          <h3 style={{ fontSize: 15, marginBottom: 10 }}>⚠️ Tồn kho thấp</h3>
-          {d.lowStock.length === 0 ? <p className="small muted">Kho bánh đều ổn, không biến thể nào dưới ngưỡng.</p> : (
-            <table className="table">
-              <tbody>
-                {d.lowStock.slice(0, 8).map((l) => (
-                  <tr key={l.id}>
-                    <td className="small"><b>{l.productName}</b><div className="small muted">{l.variantName}{l.sku ? ` • ${l.sku}` : ''}</div></td>
-                    <td className="right"><span className="tag tag-warn">còn {l.stock}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <Link to="/products" className="btn btn-outline btn-sm" style={{ marginTop: 10 }}>Đi bổ sung kho →</Link>
-        </div>
-      </div>
     </>
   );
 }

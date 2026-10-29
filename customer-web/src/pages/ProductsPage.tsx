@@ -1,15 +1,17 @@
 /** Danh sách bánh: lọc danh mục / giá / nguyên liệu / dị ứng + sắp xếp + phân trang */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
-import { SlidersHorizontal, Sparkles, X } from 'lucide-react';
+import { RotateCcw, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 import type { AllergenDTO, IngredientDTO, Paginated, ProductListDTO } from '@shared/types';
 import { SORT_OPTIONS } from '@shared';
-import { get } from '../lib/api';
+import { errMessage, get } from '../lib/api';
 import { CardSkeleton, EmptyState, PageIntro, Reveal, Stagger } from '../components/ui';
 import { ProductCard } from '../components/ProductCard';
 import { Pagination } from '../components/Pagination';
 import { useCategories } from '../hooks/catalog';
+import { useBodyScrollLock, useFocusTrap } from '../hooks/a11y';
+import { useSeo } from '../lib/seo';
 
 const sortLabels: Record<string, string> = {
   newest: 'Mới nhất',
@@ -40,6 +42,19 @@ export default function ProductsPage() {
   const excludeAllergenIds = params.get('excludeAllergenIds') || '';
   const featured = params.get('featured') === 'true';
   const seasonal = params.get('seasonal') === 'true';
+
+  useSeo({
+    title: q ? `Tìm “${q}”` : 'Thực đơn bánh',
+    description: 'Khám phá thực đơn bánh kem, bánh ngọt phong cách Á-Âu của Nini Cakes. Lọc theo khẩu vị, thành phần và dị ứng.',
+  });
+
+  /* Ô tìm kiếm trong bộ lọc: đồng bộ hai chiều với ?q trên URL */
+  const [searchInput, setSearchInput] = useState(q);
+  useEffect(() => setSearchInput(q), [q]);
+
+  /* Drawer bộ lọc trên mobile: khóa cuộn + bẫy tiêu điểm */
+  useBodyScrollLock(filterOpen);
+  const filterRef = useFocusTrap<HTMLElement>(filterOpen, () => setFilterOpen(false));
 
   const { data: categories } = useCategories();
   const ingredientsQ = useQuery({
@@ -115,6 +130,14 @@ export default function ProductsPage() {
   if (ingredientSelection.length) chips.push({ label: `${ingredientSelection.length} thành phần`, clear: { ingredientIds: null } });
   if (allergenSelection.length) chips.push({ label: `Tránh ${allergenSelection.length} dị ứng`, clear: { excludeAllergenIds: null } });
 
+  const sortSelect = (
+    <select className="select select--sm" value={sort} onChange={(e) => update({ sort: e.target.value })} aria-label="Sắp xếp theo">
+      {SORT_OPTIONS.map((s) => (
+        <option key={s} value={s}>{sortLabels[s]}</option>
+      ))}
+    </select>
+  );
+
   return (
     <>
       <PageIntro
@@ -126,7 +149,8 @@ export default function ProductsPage() {
 
       <div className="container section section--tight">
         <div className={`catalog-layout${filterOpen ? ' is-open' : ''}`}>
-          <aside className="card filter-box">
+          {filterOpen && <div className="filter-scrim" onClick={() => setFilterOpen(false)} aria-hidden />}
+          <aside className="card filter-box" ref={filterRef} aria-label="Bộ lọc sản phẩm">
             <div className="filter-box__head">
               <span className="eyebrow no-rule">Bộ lọc</span>
               <button type="button" className="filter-box__close" onClick={() => setFilterOpen(false)} aria-label="Đóng bộ lọc">
@@ -136,13 +160,34 @@ export default function ProductsPage() {
 
             <div className="filter-group">
               <div className="filter-title">Tìm kiếm</div>
-              <input className="input" placeholder="Tên bánh / mô tả" defaultValue={q}
-                onKeyDown={(e) => { if (e.key === 'Enter') update({ q: (e.target as HTMLInputElement).value }); }} />
+              <form
+                className="input-with-x"
+                onSubmit={(e) => { e.preventDefault(); update({ q: searchInput.trim() || null }); }}
+                role="search"
+              >
+                <input
+                  className="input"
+                  placeholder="Tên bánh / mô tả"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  aria-label="Tìm trong thực đơn"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    className="input-x"
+                    onClick={() => { setSearchInput(''); update({ q: null }); }}
+                    aria-label="Xóa từ khóa"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </form>
             </div>
 
             <div className="filter-group">
               <div className="filter-title">Sắp xếp</div>
-              <select className="select" value={sort} onChange={(e) => update({ sort: e.target.value })}>
+              <select className="select" value={sort} onChange={(e) => update({ sort: e.target.value })} aria-label="Sắp xếp theo">
                 {SORT_OPTIONS.map((s) => (
                   <option key={s} value={s}>{sortLabels[s]}</option>
                 ))}
@@ -151,11 +196,15 @@ export default function ProductsPage() {
 
             <div className="filter-group">
               <div className="filter-title">Khoảng giá (₫)</div>
-              <select className="select" value={priceBand}
+              <select
+                className="select"
+                value={priceBand}
+                aria-label="Khoảng giá"
                 onChange={(e) => {
                   const [mn, mx] = e.target.value.split('_');
                   update({ minPrice: mn || null, maxPrice: mx || null });
-                }}>
+                }}
+              >
                 {priceBands.map((b) => (
                   <option key={b.key} value={b.key}>{b.label}</option>
                 ))}
@@ -218,13 +267,16 @@ export default function ProductsPage() {
 
             <button className="btn btn-soft btn-block btn-sm" style={{ marginTop: 18 }}
               onClick={() => setParams(new URLSearchParams())}>
-              Đặt lại bộ lọc
+              <RotateCcw size={13} /> Đặt lại bộ lọc
+            </button>
+            <button className="btn btn-gold btn-block filter-apply" onClick={() => setFilterOpen(false)}>
+              Xem {total} bánh phù hợp
             </button>
           </aside>
 
           <section className="catalog-results">
             <div className="results-bar">
-              <div className="small muted">
+              <div className="small muted" role="status" aria-live="polite">
                 {query.isFetching ? (
                   <span className="results-bar__live">Đang cập nhật kệ bánh…</span>
                 ) : (
@@ -235,21 +287,40 @@ export default function ProductsPage() {
               </div>
               <div className="results-bar__side">
                 {chips.map((c) => (
-                  <button key={c.label} type="button" className="chip-x" onClick={() => update(c.clear)}>
+                  <button key={c.label} type="button" className="chip-x" onClick={() => update(c.clear)} aria-label={`Bỏ lọc: ${c.label}`}>
                     {c.label} <X size={12} />
                   </button>
                 ))}
-                <button type="button" className="btn btn-ghost btn-sm filter-toggle" onClick={() => setFilterOpen(true)}>
+                <span className="results-sort">{sortSelect}</span>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm filter-toggle"
+                  onClick={() => setFilterOpen(true)}
+                  aria-expanded={filterOpen}
+                >
                   <SlidersHorizontal size={14} /> Bộ lọc
+                  {chips.length > 0 && <span className="filter-count">{chips.length}</span>}
                 </button>
               </div>
             </div>
 
             {query.isLoading && <CardSkeleton count={6} />}
 
-            {!query.isLoading && items.length === 0 && (
+            {query.isError && (
+              <EmptyState icon="🫖" title="Chưa mở được kệ bánh">
+                <p className="small muted">{errMessage(query.error, 'Kết nối đến tiệm bị gián đoạn.')}</p>
+                <button className="btn btn-primary btn-sm" style={{ marginTop: 10 }} onClick={() => query.refetch()}>
+                  <RotateCcw size={14} /> Thử lại
+                </button>
+              </EmptyState>
+            )}
+
+            {!query.isLoading && !query.isError && items.length === 0 && (
               <EmptyState icon="🔎" title="Không tìm thấy bánh nào phù hợp">
-                <p className="small">Thử bỏ bớt bộ lọc hoặc đổi từ khóa tìm kiếm xem sao!</p>
+                <p className="small">
+                  {q ? <>Không có kết quả cho “{q}”. </> : null}
+                  Thử bỏ bớt bộ lọc hoặc đổi từ khóa tìm kiếm xem sao!
+                </p>
                 <button className="btn btn-ghost btn-sm" onClick={() => setParams(new URLSearchParams())}>Đặt lại bộ lọc</button>
               </EmptyState>
             )}
@@ -260,7 +331,7 @@ export default function ProductsPage() {
               </Stagger>
             )}
 
-            {query.data && (
+            {query.data && !query.isError && (
               <Pagination meta={query.data.meta} page={page} onPage={(np) => update({ page: String(np) }, false)} />
             )}
 

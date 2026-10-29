@@ -1,9 +1,9 @@
 /** Câu hỏi thường gặp: accordion hoạt họa từ bài viết loại FAQ */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, RotateCcw } from 'lucide-react';
 import type { PostSummaryDTO } from '@shared/types';
-import { get } from '../lib/api';
+import { get, errMessage } from '../lib/api';
 import { CardSkeleton, EmptyState, PageIntro, Reveal } from '../components/ui';
 import { useSeo } from '../lib/seo';
 import { useState } from 'react';
@@ -31,7 +31,17 @@ export default function FaqPage() {
 
       <div className="container section section--tight container-narrow">
         {query.isLoading && <CardSkeleton count={3} />}
-        {!query.isLoading && items.length === 0 && (
+
+        {query.isError && (
+          <EmptyState icon="🫖" title="Chưa tải được câu hỏi">
+            <p className="small muted">{errMessage(query.error, 'Kết nối đến tiệm bị gián đoạn.')}</p>
+            <button type="button" className="btn btn-primary btn-sm" style={{ marginTop: 10 }} onClick={() => query.refetch()}>
+              <RotateCcw size={14} /> Thử lại
+            </button>
+          </EmptyState>
+        )}
+
+        {!query.isLoading && !query.isError && items.length === 0 && (
           <EmptyState icon="💬" title="Chưa có câu hỏi nào được đăng" />
         )}
 
@@ -40,17 +50,26 @@ export default function FaqPage() {
             const isOpen = open === i;
             return (
               <Reveal key={f.id} from="soft" delay={i * 40} as="div" className={`card faq-item${isOpen ? ' is-open' : ''}`}>
-                <button
-                  type="button"
-                  className="faq-item__q"
-                  aria-expanded={isOpen}
-                  onClick={() => setOpen(isOpen ? null : i)}
+                <h3 className="faq-item__heading">
+                  <button
+                    type="button"
+                    className="faq-item__q"
+                    aria-expanded={isOpen}
+                    aria-controls={`faq-panel-${f.id}`}
+                    id={`faq-btn-${f.id}`}
+                    onClick={() => setOpen(isOpen ? null : i)}
+                  >
+                    <span className="faq-item__n">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="faq-item__t">{f.title}</span>
+                    <Plus size={18} className={`plus-minus${isOpen ? ' is-open' : ''}`} aria-hidden />
+                  </button>
+                </h3>
+                <div
+                  className={`collapsible${isOpen ? ' is-open' : ''}`}
+                  id={`faq-panel-${f.id}`}
+                  role="region"
+                  aria-labelledby={`faq-btn-${f.id}`}
                 >
-                  <span className="faq-item__n">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="faq-item__t">{f.title}</span>
-                  <Plus size={18} className={`plus-minus${isOpen ? ' is-open' : ''}`} aria-hidden />
-                </button>
-                <div className={`collapsible${isOpen ? ' is-open' : ''}`}>
                   <div>
                     <div className="faq-item__a">
                       {f.excerpt && <p className="small muted">{f.excerpt}</p>}
@@ -62,6 +81,12 @@ export default function FaqPage() {
             );
           })}
         </div>
+
+        {items.length > 0 && (
+          <Reveal className="faq-foot note-box" from="soft">
+            Chưa thấy câu trả lời mình cần? <Link to="/lien-he">Nhắn cho tiệm</Link> — Nini trả lời trong ngày.
+          </Reveal>
+        )}
       </div>
     </>
   );

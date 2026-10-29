@@ -21,7 +21,6 @@ export default function AdminLayout() {
   const pendingCount = dashQ.data?.ordersPending ?? 0;
   const reviewCount = dashQ.data?.reviewsPending ?? 0;
   const messageCount = dashQ.data?.messagesUnread ?? 0;
-  const lowStockCount = dashQ.data?.lowStock?.length ?? 0;
 
   const Dot = ({ n, tone }: { n: number; tone?: string }) =>
     n > 0 ? <span className={`badge-dot${tone ? ` badge-dot--${tone}` : ''}`}>{n}</span> : null;
@@ -38,11 +37,14 @@ export default function AdminLayout() {
   return (
     <div className="admin-shell">
       <aside className="sidebar">
-        <div className="brand">🎂 Nini Quản trị</div>
+        <div className="brand">
+          <img src="/logo.png" alt="Logo Nini Cake" className="brand-logo" />
+          <span>Nini Quản trị</span>
+        </div>
         <nav>
           <NavLink to="/" end className={link}>📊 Tổng quan</NavLink>
           <NavLink to="/orders" className={link}>🧾 Đơn hàng <Dot n={pendingCount} /></NavLink>
-          <NavLink to="/products" className={link}>🍰 Sản phẩm <Dot n={lowStockCount} tone="soft" /></NavLink>
+          <NavLink to="/products" className={link}>🍰 Sản phẩm</NavLink>
           <NavLink to="/categories" className={link}>🗂️ Danh mục & nguyên liệu</NavLink>
           <NavLink to="/coupons" className={link}>🎟️ Khuyến mãi</NavLink>
           <NavLink to="/reviews" className={link}>⭐ Đánh giá <Dot n={reviewCount} tone="gold" /></NavLink>

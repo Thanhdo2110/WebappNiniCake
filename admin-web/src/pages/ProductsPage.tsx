@@ -43,7 +43,7 @@ export default function ProductsPage() {
         isFeatured: full.isFeatured,
         isSeasonal: full.isSeasonal,
         isActive: !full.isActive,
-        variants: full.variants.map((v) => ({ id: v.id, name: v.name, flavor: v.flavor || '', price: v.price, stock: v.stock, isActive: v.isActive })),
+        variants: full.variants.map((v) => ({ id: v.id, name: v.name, flavor: v.flavor || '', price: v.price, isActive: v.isActive })),
         images: full.images.map((m) => ({ url: m.url || '', alt: m.alt || '', isPrimary: m.isPrimary })),
         ingredientIds: full.ingredients,
         allergenIds: full.allergens,
@@ -81,7 +81,7 @@ export default function ProductsPage() {
           <div className="card table-wrap">
             <table className="table">
               <thead>
-                <tr><th>Bánh</th><th>Danh mục</th><th>Giá thấp nhất</th><th>Tồn</th><th>Đánh giá</th><th>Trạng thái</th><th></th></tr>
+                <tr><th>Bánh</th><th>Danh mục</th><th>Giá thấp nhất</th><th>Đánh giá</th><th>Trạng thái</th><th></th></tr>
               </thead>
               <tbody>
                 {items.map((p) => (
@@ -97,7 +97,6 @@ export default function ProductsPage() {
                     </td>
                     <td className="small">{p.categoryName || '—'}</td>
                     <td style={{ fontWeight: 600 }}>{formatVND(p.price)}</td>
-                    <td><span className={`tag ${p.totalStock <= 6 ? 'tag-warn' : 'tag-green'}`}>{p.totalStock} phần</span></td>
                     <td className="small">{p.ratingCount > 0 ? `★ ${p.ratingAvg.toFixed(1)} (${p.ratingCount})` : '—'}</td>
                     <td><span className={`tag ${p.isActive ? 'tag-green' : 'tag-gray'}`}>{p.isActive ? 'Đang bán' : 'Đã ẩn'}</span></td>
                     <td>

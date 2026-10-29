@@ -65,7 +65,9 @@ export const catalogService = {
   },
   async createIngredient(input: { name: string; note?: string; allergenIds?: number[] }) {
     const dup = await repo.getIngredientByName(input.name);
-    if (dup) throw fail('Nguyên liệu này đã có trong danh sách.', 409);
+    if (dup && !dup.deletedAt) throw fail('Nguyên liệu này đã có trong danh sách.', 409);
+    /* Tên đã từng dùng rồi xóa: dựng lại bản ghi cũ thay vì đụng unique index */
+    if (dup) return repo.restoreIngredient(dup.id);
     return repo.createIngredient({
       name: input.name,
       note: input.note || null,

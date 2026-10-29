@@ -50,7 +50,7 @@ export const contentRepository = {
   updateSettings: (data: Record<string, unknown>) => prisma.storeSetting.update({ where: { id: 1 }, data }),
 
   /* ---- Messages / Newsletter ---- */
-  createMessage: (data: { name: string; email: string; phone?: string | null; subject?: string | null; content: string }) =>
+  createMessage: (data: { name: string; email: string; phone?: string | null; subject?: string | null; content: string; imageUrl?: string | null }) =>
     prisma.message.create({ data }),
   listMessages: (page: number, perPage: number) =>
     prisma.$transaction([

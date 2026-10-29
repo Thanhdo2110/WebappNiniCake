@@ -1,8 +1,9 @@
 import { createApp } from './app.js';
-import { envs } from './config/env.js';
+import { assertProductionSecrets, envs } from './config/env.js';
 import { prisma } from './config/prisma.js';
 
 async function main() {
+  assertProductionSecrets();
   const app = createApp();
   const port = envs.port;
 

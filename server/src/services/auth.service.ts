@@ -17,7 +17,7 @@ interface TokenSet {
   refreshToken: string;
 }
 
-function signAccessToken(user: { id: number; email: string; role: string }): string {
+function signAccessToken(user: { id: number; email: string | null; role: string }): string {
   const payload: Record<string, unknown> = { sub: String(user.id), email: user.email, role: user.role };
   return jwt.sign(payload, envs.jwt.accessSecret, {
     expiresIn: envs.jwt.accessTtl as jwt.SignOptions['expiresIn'],
@@ -39,7 +39,7 @@ function expiresAtOf(token: string): Date {
   return payload?.exp ? new Date(payload.exp * 1000) : new Date(Date.now() + 7 * 24 * 3600 * 1000);
 }
 
-export function issueSession(userId: number, email: string, role: string): TokenSet {
+export function issueSession(userId: number, email: string | null, role: string): TokenSet {
   const accessToken = signAccessToken({ id: userId, email, role });
   const refreshToken = signRefreshToken(userId);
   return { accessToken, refreshToken };
@@ -59,28 +59,29 @@ export function clearRefreshCookie(res: Response) {
 }
 
 export const authService = {
-  async register(input: { fullName: string; email: string; phone?: string; password: string }) {
-    const existing = await repo.findByEmail(input.email);
-    if (existing) throw fail('Email sẽ được dùng cho tài khoản khác. Vui lòng dùng email khác.', 409);
+  async register(input: { fullName: string; phone: string; password: string }) {
+    const existing = await repo.findByPhone(input.phone);
+    if (existing) throw fail('Số điện thoại đã được đăng ký. Vui lòng dùng số khác hoặc đăng nhập.', 409);
     const customerRole = await repo.findRole('CUSTOMER');
     if (!customerRole) throw fail('Hệ thống chưa khởi tạo vai trò. Vui lòng seed dữ liệu.', 500);
     const passwordHash = await bcrypt.hash(input.password, 10);
     const user = await repo.createUser({
       roleId: customerRole.id,
-      email: input.email,
       passwordHash,
       fullName: input.fullName,
-      phone: input.phone || null,
+      phone: input.phone,
     });
     return user;
   },
 
-  async login(email: string, password: string) {
-    const user = await repo.findByEmail(email);
-    if (!user) throw fail('Email hoặc mật khẩu chưa đúng.', 401);
+  async login(input: { phone?: string; email?: string }, password: string) {
+    const byPhone = Boolean(input.phone);
+    const wrongCreds = byPhone ? 'Số điện thoại hoặc mật khẩu chưa đúng.' : 'Email hoặc mật khẩu chưa đúng.';
+    const user = byPhone ? await repo.findByPhone(input.phone!) : await repo.findByEmail(input.email!);
+    if (!user) throw fail(wrongCreds, 401);
     if (user.status === 'BLOCKED') throw fail('Tài khoản đã bị khóa. Vui lòng liên hệ tiệm.', 403);
     const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) throw fail('Email hoặc mật khẩu chưa đúng.', 401);
+    if (!ok) throw fail(wrongCreds, 401);
     return user;
   },
 
@@ -157,29 +158,29 @@ export const authService = {
     await repo.revokeAllUserTokens(userId);
   },
 
-  /* Quên mật khẩu: mã code 6 số, lưu in-memory (TTL 10 phút) */
+  /* Quên mật khẩu: mã code 6 số, lưu in-memory (TTL 10 phút), khóa theo số điện thoại */
   resetCodes: new Map<string, { code: string; expires: number }>(),
 
-  async resetCodeOf(email: string): Promise<string | null> {
-    const user = await repo.findByEmail(email);
+  async resetCodeOf(phone: string): Promise<string | null> {
+    const user = await repo.findByPhone(phone);
     if (!user) return null;
     const code = String(Math.floor(100000 + Math.random() * 900000));
-    this.resetCodes.set(email, { code, expires: Date.now() + 10 * 60 * 1000 });
+    this.resetCodes.set(phone, { code, expires: Date.now() + 10 * 60 * 1000 });
     return code;
   },
 
-  async resetPassword(email: string, code: string, newPassword: string) {
-    const rec = this.resetCodes.get(email);
+  async resetPassword(phone: string, code: string, newPassword: string) {
+    const rec = this.resetCodes.get(phone);
     if (!rec || rec.expires < Date.now()) throw fail('Mã xác nhận đã hết hạn. Vui lòng thử lại.', 400);
     if (rec.code !== code) throw fail('Mã xác nhận chưa đúng.', 400);
-    const user = await repo.findByEmail(email);
+    const user = await repo.findByPhone(phone);
     if (!user) throw fail('Không tìm thấy tài khoản.', 404);
     await repo.updatePassword(user.id, await bcrypt.hash(newPassword, 10));
     await repo.revokeAllUserTokens(user.id);
-    this.resetCodes.delete(email);
+    this.resetCodes.delete(phone);
   },
 
-  toAuthUser(user: { id: number; email: string; fullName: string; role: { name: string } | null }): AuthUser {
+  toAuthUser(user: { id: number; email: string | null; fullName: string; role: { name: string } | null }): AuthUser {
     return { id: user.id, email: user.email, role: user.role?.name || 'CUSTOMER', fullName: user.fullName };
   },
 

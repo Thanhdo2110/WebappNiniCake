@@ -13,7 +13,7 @@ COPY shared ./shared
 COPY customer-web ./customer-web
 RUN npm -w customer-web run build
 
-FROM nginx:1.27-alpine AS run
+FROM nginx:1.27-alpine AS runtime
 COPY customer-web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/customer-web/dist /usr/share/nginx/html
 EXPOSE 80

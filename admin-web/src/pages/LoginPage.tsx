@@ -53,9 +53,6 @@ export default function LoginPage() {
           <button type="submit" className="btn btn-primary btn-block" style={{ marginTop: 8 }} disabled={busy}>
             {busy ? 'Đang kiểm tra...' : 'Vào bàn làm việc'}
           </button>
-          <p className="small muted center" style={{ marginTop: 12 }}>
-            Tài khoản demo: admin@ninicakes.vn / Admin@123<br />staff@ninicakes.vn / Staff@123
-          </p>
         </form>
       </div>
     </div>

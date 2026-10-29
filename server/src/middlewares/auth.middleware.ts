@@ -6,7 +6,8 @@ import { fail } from '../utils/http.js';
 
 export interface AuthUser {
   id: number;
-  email: string;
+  /** Khách hàng đăng ký bằng SĐT nên email có thể trống; chỉ tài khoản quản trị bắt buộc. */
+  email: string | null;
   role: string;
   fullName: string;
 }
@@ -45,7 +46,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
   if (!token) return next(fail('Bạn cần đăng nhập để tiếp tục.', 401));
   try {
-    const payload = jwt.verify(token, envs.jwt.accessSecret) as { sub: string; role: string; email: string };
+    const payload = jwt.verify(token, envs.jwt.accessSecret) as { sub: string; role: string; email: string | null };
     const user = await prisma.user.findFirst({
       where: { id: Number(payload.sub), deletedAt: null },
       include: { role: true },
@@ -64,7 +65,7 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
   if (!token) return next();
   try {
-    const payload = jwt.verify(token, envs.jwt.accessSecret) as { sub: string; role: string; email: string };
+    const payload = jwt.verify(token, envs.jwt.accessSecret) as { sub: string; role: string; email: string | null };
     prisma.user
       .findFirst({ where: { id: Number(payload.sub), deletedAt: null }, include: { role: true } })
       .then((user) => {

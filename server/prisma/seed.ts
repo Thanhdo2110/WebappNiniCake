@@ -13,6 +13,7 @@ import {
   REVIEW_SEEDS,
 } from './seed-data.js';
 import { vnSlug } from '../src/utils/slug.js';
+import { DELIVERY_TIME_SLOTS } from '@ninicakes/shared';
 import { writeProductArtwork, writeBannerArtwork } from './product-art.js';
 
 export const prisma = new PrismaClient();
@@ -26,7 +27,7 @@ const CUSTOMERS = [
   { fullName: 'Đỗ Khánh Linh', email: 'linh.do@example.com', phone: '0961832774' },
 ];
 
-const SLOTS = ['08:00 - 10:00', '10:00 - 12:00', '14:00 - 16:00', '16:00 - 18:00', '18:00 - 21:30'];
+const SLOTS = [...DELIVERY_TIME_SLOTS];
 
 interface OrderPlan {
   daysAgo: number;
@@ -223,6 +224,18 @@ async function seedDemoOrders(
 }
 
 async function main() {
+  /* Seed chỉ dành cho database trắng. Chạy lại trên database đã có dữ liệu sẽ
+     xóa sạch tài khoản, đơn hàng, đánh giá của khách — phải nói rõ mới được làm. */
+  if (process.env.SEED_SAMPLE_DATA === 'false') {
+    console.info('[seed] SEED_SAMPLE_DATA=false — bỏ qua seeding.');
+    return;
+  }
+  const existingUsers = await prisma.user.count();
+  const existingSettings = await prisma.storeSetting.count();
+  if ((existingUsers > 0 || existingSettings > 0) && process.env.SEED_FORCE !== '1') {
+    console.info(`[seed] Database đã có dữ liệu (users=${existingUsers}) — không đụng vào. Muốn dựng lại từ đầu: SEED_FORCE=1 npm -w server run seed`);
+    return;
+  }
   console.info('[seed] Dọn dữ liệu cũ ...');
   await wipeAll();
 
@@ -533,7 +546,7 @@ async function main() {
   console.info(`[seed] Xong! users=${users}, products=${products}, variants=${variantsCount}, orders=${orders}, reviews=${reviews}, subscribers=${subs}`);
   console.info('[seed] Admin: admin@ninicakes.vn / Admin@123');
   console.info('[seed] Nhân viên: staff@ninicakes.vn / Staff@123');
-  console.info(`[seed] Khách demo: vy.nguyen@example.com / ${CUSTOMER_PASSWORD}`);
+  console.info(`[seed] Khách demo (đăng nhập bằng SĐT): ${CUSTOMERS[0].phone} / ${CUSTOMER_PASSWORD}`);
 }
 
 main()

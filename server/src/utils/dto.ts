@@ -6,6 +6,7 @@ import type {
   RoleName,
   UserStatus,
 } from '@prisma/client';
+import { payosEnabled } from '../config/env.js';
 import type {
   CartItemDTO,
   CartSummaryDTO,
@@ -22,7 +23,7 @@ type ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
     category: { select: { name: true; slug: true } };
     images: { select: { url: true; alt: true; isPrimary: true; sortOrder: true } };
-    variants: { select: { id: true; name: true; flavor: true; price: true; isActive: true; stock: true; sku: true; productId: true } };
+    variants: { select: { id: true; name: true; flavor: true; price: true; isActive: true; sku: true; productId: true } };
     ingredients: { include: { ingredient: { include: { allergens: { include: { allergen: true } } } } } };
     allergens: { include: { allergen: true } };
   };
@@ -38,7 +39,7 @@ export function primaryImage(i: { url: string | null; isPrimary?: boolean; sortO
 
 type UserLike = {
   id: number;
-  email: string;
+  email: string | null;
   fullName: string;
   phone: string | null;
   avatarUrl: string | null;
@@ -110,7 +111,6 @@ export function productToDetailDTO(p: ProductWithRelations): ProductDetailDTO {
       name: v.name,
       flavor: v.flavor,
       price: v.price,
-      stock: v.stock,
       sku: v.sku,
       isActive: v.isActive,
     })),
@@ -147,7 +147,7 @@ type OrderItemLike = {
 export function orderToDTO(o: OrderModel & {
   items?: OrderItemLike[];
   history?: (Prisma.OrderStatusHistoryGetPayload<{ include: { changedBy: { select: { id: true; fullName: true } } } }>)[];
-  user?: { id: number; email: string; fullName: string; phone: string | null } | null;
+  user?: { id: number; email: string | null; fullName: string; phone: string | null } | null;
 }): OrderDTO {
   const items = (o.items || []).map(itemToDTO);
   const history = (o.history || []).map<OrderStatusHistoryDTO>((h) => ({
@@ -197,7 +197,7 @@ export type CartItemRow = Prisma.CartItemGetPayload<{
     variant: {
       include: {
         product: {
-          select: { id: true; name: true; isActive: true; deletedAt: true };
+          select: { id: true; name: true; slug: true; isActive: true; deletedAt: true };
         };
       };
     };
@@ -212,12 +212,12 @@ export function cartToSummary(cart: CartModel & { items: CartItemRow[] }): CartS
       variantId: ci.variant.id,
       productId: ci.variant.product.id,
       productName: ci.variant.product.name,
+      productSlug: ci.variant.product.slug ?? null,
       variantName: ci.variant.name,
       imageUrl: null,
       unitPrice: ci.unitPrice,
       quantity: ci.quantity,
       lineTotal: ci.unitPrice * ci.quantity,
-      stock: ci.variant.stock,
       options: (ci.options as CartItemDTO['options']) ?? null,
     }));
   return { items, subtotal: items.reduce((s, i) => s + i.lineTotal, 0) };
@@ -257,5 +257,7 @@ export function settingsToDTO(s: {
     bankAccountNumber: s.bankAccountNumber,
     shippingFeeVnd: s.shippingFeeVnd,
     freeShippingMinVnd: s.freeShippingMinVnd,
+    /** storefront chỉ hiện QR PayOS khi server đã cấu hình cổng thanh toán */
+    payosEnabled,
   };
 }

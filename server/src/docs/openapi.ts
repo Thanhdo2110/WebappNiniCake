@@ -65,7 +65,6 @@ export const openApiSpec = {
           name: { type: 'string' },
           flavor: { type: 'string', nullable: true },
           price: { type: 'integer' },
-          stock: { type: 'integer' },
           sku: { type: 'string' },
         },
       },
@@ -132,12 +131,11 @@ export const openApiSpec = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['fullName', 'email', 'password'],
+                required: ['fullName', 'phone', 'password'],
                 properties: {
                   fullName: { type: 'string' },
-                  email: { type: 'string' },
-                  phone: { type: 'string' },
-                  password: { type: 'string', format: 'password' },
+                  phone: { type: 'string', description: 'Số điện thoại dùng để đăng nhập, dạng 0xxxxxxxxx' },
+                  password: { type: 'string', format: 'password', minLength: 4 },
                 },
               },
             },
@@ -149,13 +147,13 @@ export const openApiSpec = {
     '/auth/login': {
       post: {
         tags: ['Auth'],
-        summary: 'Đăng nhập',
+        summary: 'Đăng nhập (khách hàng dùng SĐT, quản trị dùng email)',
         requestBody: {
           content: {
             'application/json': {
               schema: {
                 type: 'object',
-                properties: { email: { type: 'string' }, password: { type: 'string' } },
+                properties: { phone: { type: 'string' }, email: { type: 'string' }, password: { type: 'string' } },
               },
             },
           },
@@ -412,6 +410,7 @@ export const openApiSpec = {
     '/admin/coupons': { get: { tags: ['Admin'], security: [{ bearerAuth: [] }], summary: 'Danh sách mã giảm giá', responses: { '200': { description: 'OK' } } }, post: { tags: ['Admin'], security: [{ bearerAuth: [] }], summary: 'Tạo mã', responses: { '201': { description: 'OK' } } } },
     '/admin/reviews': { get: { tags: ['Admin'], security: [{ bearerAuth: [] }], summary: 'Duyệt/ẩn/phản hồi đánh giá', responses: { '200': { description: 'OK' } } } },
     '/uploads': { post: { tags: ['Cart'], security: [{ bearerAuth: [] }], summary: 'Khách tải ảnh tham khảo cho bánh (multipart/form-data, field=file)', responses: { '200': { description: 'url ảnh' } } } },
+    '/uploads/attach': { post: { tags: ['Content'], summary: 'Khách vãng lai đính kèm ảnh bánh vào tin nhắn liên hệ (multipart/form-data, field=file; giới hạn 8 ảnh / 15 phút / IP)', responses: { '200': { description: 'url ảnh' }, '429': { description: 'Vượt giới hạn tải lên' } } } },
     '/admin/uploads': { post: { tags: ['Admin'], security: [{ bearerAuth: [] }], summary: 'Tải ảnh lên (multipart/form-data, field=file)', responses: { '200': { description: 'url ảnh' } } } },
     '/admin/dashboard': { get: { tags: ['Reports'], security: [{ bearerAuth: [] }], summary: 'Số liệu + biểu đồ dashboard 14 ngày', responses: { '200': { description: 'OK' } } } },
     '/admin/reports/revenue': { get: { tags: ['Reports'], security: [{ bearerAuth: [] }], summary: 'Doanh thu theo ngày/tuần/tháng', parameters: [{ name: 'from', in: 'query', schema: { type: 'string', format: 'date' } }, { name: 'to', in: 'query', schema: { type: 'string', format: 'date' } }, { name: 'groupBy', in: 'query', schema: { type: 'string', enum: ['day', 'week', 'month'] } }], responses: { '200': { description: 'OK' } } } },

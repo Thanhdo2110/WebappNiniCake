@@ -1,14 +1,17 @@
-/** Chi tiết đơn của khách: dòng bánh, tiến trình trạng thái động, hóa đơn in được */
+/** Chi tiết đơn của khách: dòng bánh, tiến trình trạng thái động, hóa đơn in được, đặt lại đơn */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { Check, Printer, Sparkles } from 'lucide-react';
+import { Check, CreditCard, MapPin, Printer, RotateCcw, Sparkles } from 'lucide-react';
 import type { OrderDTO, StoreSettingsDTO } from '@shared/types';
-import { ORDER_STATUS_LABEL, ORDER_STATUS_COLOR, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL, DELIVERY_TYPE_LABEL } from '@shared';
+import { ORDER_STATUS_LABEL, ORDER_STATUS_COLOR, PAYMENT_METHOD_LABEL, PAYMENT_STATUS_LABEL, DELIVERY_TYPE_LABEL, isAwaitingPayment } from '@shared';
 import type { CSSProperties } from 'react';
 import { formatVND, formatDateTime, formatDate } from '../../lib/format';
-import { imageUrl } from '../../lib/placeholder';
+import { imageUrl, imgFallback } from '../../lib/placeholder';
 import { get, post, errMessage } from '../../lib/api';
+import { mapsLink } from '../../lib/geo';
 import { EmptyState, LoadingBlock, Reveal, StatusPill } from '../../components/ui';
+import { ConfirmDialog } from '../../components/Overlay';
 import { useToast } from '../../hooks/toast';
 import { useSeo } from '../../lib/seo';
 
@@ -22,6 +25,8 @@ export default function OrderDetailPage() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const welcome = params.get('welcome') === '1';
+  const justPaid = params.get('paid') === '1';
+  const [cancelOpen, setCancelOpen] = useState(false);
   const qc = useQueryClient();
   const { toast } = useToast();
   useSeo({ title: 'Chi tiết đơn hàng' });
@@ -36,8 +41,35 @@ export default function OrderDetailPage() {
     mutationFn: () => post(`/orders/${id}/cancel`, { reason: 'Khách hủy từ trang chi tiết' }),
     onSuccess: () => {
       toast('Đã hủy đơn. Tiệm sẽ hoàn tiền nếu bạn đã chuyển khoản trước đó (sau kiểm tra).', 'ok');
+      setCancelOpen(false);
       qc.invalidateQueries({ queryKey: ['order', id] });
       qc.invalidateQueries({ queryKey: ['orders'] });
+    },
+    onError: (e) => toast(errMessage(e), 'err'),
+  });
+
+  /* Đặt lại đơn: thêm từng món (còn bán) vào giỏ, kèm lời chúc/ghi chú cũ */
+  const reorderM = useMutation({
+    mutationFn: async (o: OrderDTO) => {
+      const addable = o.items.filter((it) => it.variantId !== null);
+      if (addable.length === 0) throw new Error('Đơn này không còn món nào có thể đặt lại.');
+      const results = await Promise.allSettled(
+        addable.map((it) =>
+          post('/cart/items', {
+            variantId: it.variantId,
+            quantity: it.quantity,
+            options: (it.options as { messageOnCake?: string; notes?: string; referenceImageUrl?: string }) ?? undefined,
+          })
+        )
+      );
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      return { total: addable.length, failed };
+    },
+    onSuccess: ({ total, failed }) => {
+      qc.invalidateQueries({ queryKey: ['cart'] });
+      if (failed === 0) toast(`Đã thêm lại ${total} món vào giỏ — kiểm tra rồi chốt đơn nhé!`, 'ok');
+      else toast(`Đã thêm ${total - failed}/${total} món; có món hết hàng hoặc ngừng bán.`, 'err');
+      window.dispatchEvent(new CustomEvent('nc:open-cart'));
     },
     onError: (e) => toast(errMessage(e), 'err'),
   });
@@ -58,13 +90,22 @@ export default function OrderDetailPage() {
 
   return (
     <div className="order-detail">
-      {welcome && o.status === 'PENDING' && (
+      {justPaid && o.paymentStatus === 'PAID' && (
+        <Reveal from="scale" className="card welcome-card welcome-card--paid">
+          <span className="welcome-card__icon"><Check size={18} /></span>
+          <div>
+            <h3>Đã nhận đủ thanh toán</h3>
+            <p className="small muted">Tiệm đã xác nhận tiền cho đơn #{o.code} và đang chuẩn bị bánh.</p>
+          </div>
+        </Reveal>
+      )}
+      {welcome && o.status === 'PENDING' && !isAwaitingPayment(o) && (
         <Reveal from="scale" className="card welcome-card">
           <span className="welcome-card__icon"><Sparkles size={18} /></span>
           <div>
             <h3>Đặt bánh thành công!</h3>
             <p className="small muted">
-              Tiệm sẽ gọi xác nhận trong ít phút. Giữ đơn #{o.code} lại để tiện kế toán giao với nhân viên nhé.
+              Bếp đã nhận đơn #{o.code}. Bạn giữ mã đơn này để tiện đối chiếu khi nhận bánh.
             </p>
           </div>
         </Reveal>
@@ -74,7 +115,9 @@ export default function OrderDetailPage() {
         <div>
           <span className="eyebrow">Đơn hàng</span>
           <h3 className="order-detail__code">
-            #{o.code} <StatusPill color={ORDER_STATUS_COLOR[o.status]}>{ORDER_STATUS_LABEL[o.status]}</StatusPill>
+            #{o.code} <StatusPill color={isAwaitingPayment(o) ? '#BF8A3C' : ORDER_STATUS_COLOR[o.status]}>
+              {isAwaitingPayment(o) ? 'Chờ thanh toán' : ORDER_STATUS_LABEL[o.status]}
+            </StatusPill>
           </h3>
           <div className="small muted">Đặt {formatDateTime(o.createdAt)}</div>
         </div>
@@ -82,8 +125,18 @@ export default function OrderDetailPage() {
           <button type="button" className="btn btn-soft btn-sm" onClick={() => window.print()}>
             <Printer size={14} /> In hóa đơn
           </button>
+          {(o.status === 'COMPLETED' || o.status === 'CANCELLED') && (
+            <button
+              type="button"
+              className="btn btn-gold btn-sm"
+              onClick={() => reorderM.mutate(o)}
+              disabled={reorderM.isPending}
+            >
+              <RotateCcw size={14} /> {reorderM.isPending ? 'Đang thêm vào giỏ…' : 'Mua lại đơn này'}
+            </button>
+          )}
           {(o.status === 'PENDING' || o.status === 'CONFIRMED') && (
-            <button type="button" className="btn btn-danger btn-sm" onClick={() => cancelM.mutate()} disabled={cancelM.isPending}>Hủy đơn</button>
+            <button type="button" className="btn btn-danger btn-sm" onClick={() => setCancelOpen(true)}>Hủy đơn</button>
           )}
         </div>
       </div>
@@ -116,7 +169,7 @@ export default function OrderDetailPage() {
             {o.items.map((it) => (
               <div key={it.id} className="order-item">
                 <span className="order-item__media img-frame">
-                  <img src={imageUrl(it.imageUrl, it.name)} alt={it.name} loading="lazy" />
+                  <img src={imageUrl(it.imageUrl, it.name)} onError={imgFallback(it.name)} alt={it.name} loading="lazy" />
                 </span>
                 <div className="order-item__body">
                   <b className="small">{it.quantity}× {it.name}</b>
@@ -148,11 +201,21 @@ export default function OrderDetailPage() {
         <div className="order-side">
           <Reveal as="div" from="right" className="card pad">
             <h4>Người nhận</h4>
-            <div className="small">{o.recipientName} • {o.recipientPhone}</div>
+            <div className="small">{o.recipientName}{o.recipientPhone ? ` • ${o.recipientPhone}` : ''}</div>
             {!isPickup && o.addressLine && (
               <div className="small muted recipient-addr">
                 {o.addressLine}{o.ward ? `, ${o.ward}` : ''}{o.district ? `, ${o.district}` : ''}{o.city ? `, ${o.city}` : ''}
               </div>
+            )}
+            {!isPickup && (o.mapsUrl || (o.lat !== null && o.lng !== null)) && (
+              <a
+                className="pin-chip"
+                href={o.mapsUrl || mapsLink({ lat: o.lat as number, lng: o.lng as number })}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <MapPin size={12} /> Xem vị trí giao trên bản đồ
+              </a>
             )}
             <div className="small muted recipient-meta">
               {DELIVERY_TYPE_LABEL[o.deliveryType]} • {formatDate(o.deliveryDate)} • {o.timeSlot}
@@ -168,10 +231,15 @@ export default function OrderDetailPage() {
                 {PAYMENT_STATUS_LABEL[o.paymentStatus]}
               </StatusPill>
             </div>
-            {o.paymentMethod === 'BANK_TRANSFER' && o.paymentStatus === 'UNPAID' && s && (
-              <div className="small muted pay-guide">
-                Chuyển <b>{formatVND(o.total)}</b> — {s.bankName}, STK <b>{s.bankAccountNumber}</b> ({s.bankAccountName}). Nội dung: #{o.code}.
-              </div>
+            {o.paymentMethod === 'BANK_TRANSFER' && o.paymentStatus === 'UNPAID' && o.status !== 'CANCELLED' && (
+              <>
+                <p className="small muted pay-guide">
+                  Đơn đang chờ {formatVND(o.total)} — nội dung chuyển khoản <b>{o.code}</b>.
+                </p>
+                <Link to={`/thanh-toan/${o.id}`} className="btn btn-gold btn-sm pay-guide__cta">
+                  <CreditCard size={14} /> Thanh toán ngay
+                </Link>
+              </>
             )}
           </Reveal>
 
@@ -188,6 +256,18 @@ export default function OrderDetailPage() {
           </Reveal>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={cancelOpen}
+        onClose={() => setCancelOpen(false)}
+        onConfirm={() => cancelM.mutate()}
+        title={`Hủy đơn #${o.code}?`}
+        message="Đơn sẽ được lấy ra khỏi bếp và không thể khôi phục. Nếu đã chuyển khoản, tiệm sẽ hoàn tiền sau khi kiểm tra."
+        confirmLabel="Hủy đơn"
+        cancelLabel="Giữ đơn lại"
+        danger
+        pending={cancelM.isPending}
+      />
 
       {/* Hóa đơn in */}
       <InvoicePrint order={o} settings={s} />
@@ -207,7 +287,7 @@ function InvoicePrint({ order, settings }: { order: OrderDTO; settings: StoreSet
       )}
       <table className="table" style={{ fontSize: 12 }}>
         <tbody>
-          <tr><td>Người nhận</td><td>{order.recipientName} — {order.recipientPhone}</td></tr>
+          <tr><td>Người nhận</td><td>{order.recipientName}{order.recipientPhone ? ` — ${order.recipientPhone}` : ''}</td></tr>
           {order.deliveryType === 'DELIVERY' && <tr><td>Địa chỉ</td><td>{order.addressLine}{order.ward ? `, ${order.ward}` : ''}{order.city ? `, ${order.city}` : ''}</td></tr>}
           <tr><td>Hình thức</td><td>{DELIVERY_TYPE_LABEL[order.deliveryType]} • {formatDate(order.deliveryDate)} • {order.timeSlot}</td></tr>
         </tbody>

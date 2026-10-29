@@ -42,10 +42,15 @@ export const orderRepository = {
   /* ============ Quản trị ============ */
   async listAdmin(params: {
     page: number; perPage: number; status?: string; search?: string; deliveryType?: string;
-    deliveryDate?: string; from?: string; to?: string;
+    deliveryDate?: string; from?: string; to?: string; paymentStatus?: string;
   }) {
     const where: Prisma.OrderWhereInput = {
       deletedAt: null,
+      /* Chưa lọc trạng thái tiền thì ẩn đơn chuyển khoản còn chờ tiền: khách mới tới
+         trang thanh toán chứ chưa trả, coi như chưa lên đơn. */
+      ...(params.paymentStatus
+        ? { paymentStatus: params.paymentStatus.toUpperCase() as 'UNPAID' | 'PAID' | 'REFUNDED' }
+        : { NOT: { paymentMethod: 'BANK_TRANSFER', paymentStatus: 'UNPAID' } }),
       ...(params.status ? { status: params.status.toUpperCase() as OrderStatus } : {}),
       ...(params.deliveryType ? { deliveryType: params.deliveryType.toUpperCase() as 'DELIVERY' | 'PICKUP' } : {}),
       ...(params.deliveryDate ? { deliveryDate: new Date(params.deliveryDate) } : {}),
@@ -86,11 +91,6 @@ export const orderRepository = {
     prisma.orderStatusHistory.create({ data }),
 
   /* ============ Transaction cho đặt hàng ============ */
-  async findByIdForUpdate(tx: Prisma.TransactionClient, ids: number[]) {
-    return tx.$queryRaw<{ id: number; stock: number; price: number; isActive: number }[]>(
-      Prisma.sql`SELECT id, stock, price, isActive FROM product_variants WHERE id IN (${Prisma.join(ids)}) FOR UPDATE`
-    );
-  },
   createOrder: (tx: Prisma.TransactionClient, data: Prisma.OrderUncheckedCreateInput) =>
     tx.order.create({ data, include: { items: true } }),
   createOrderItem: (tx: Prisma.TransactionClient, data: Prisma.OrderItemUncheckedCreateInput) =>
@@ -99,17 +99,6 @@ export const orderRepository = {
     tx.orderStatusHistory.create({ data }),
   createPaymentTx: (tx: Prisma.TransactionClient, data: Prisma.PaymentUncheckedCreateInput) =>
     tx.payment.create({ data }),
-  decrementStockTx: (tx: Prisma.TransactionClient, variantId: number, quantity: number) =>
-    tx.productVariant.updateMany({
-      where: { id: variantId, stock: { gte: quantity }, isActive: true },
-      data: { stock: { decrement: quantity } },
-    }),
-  incrementStockTx: (tx: Prisma.TransactionClient, map: { variantId: number; quantity: number }[]) =>
-    Promise.all(
-      map.map((m) =>
-        tx.productVariant.update({ where: { id: m.variantId }, data: { stock: { increment: m.quantity } } })
-      )
-    ),
   soldCountIncrementTx: (tx: Prisma.TransactionClient, rows: { variantId: number; productId: number; qty: number }[]) =>
     Promise.all(
       rows.flatMap((r) => [

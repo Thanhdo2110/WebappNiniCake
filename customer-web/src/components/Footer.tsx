@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Clock, Facebook, Instagram, Mail, MapPin, MessageCircle, Phone, Send } from 'lucide-react';
+import { Check, Clock, Facebook, Instagram, Mail, MapPin, MessageCircle, Phone, Send } from 'lucide-react';
 import { useSettings } from '../hooks/catalog';
 import { post, errMessage } from '../lib/api';
 import { useToast } from '../hooks/toast';
@@ -26,6 +26,8 @@ const NAV_CARE = [
 export function Footer() {
   const { data: s } = useSettings();
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
   const { toast } = useToast();
 
   const sub = useMutation({
@@ -33,8 +35,13 @@ export function Footer() {
     onSuccess: (r) => {
       toast(r.message || 'Đăng ký nhận tin thành công. Cảm ơn quý khách!', 'ok');
       setEmail('');
+      setEmailError('');
+      setSubscribed(true);
     },
-    onError: (e) => toast(errMessage(e), 'err'),
+    onError: (e) => {
+      setEmailError(errMessage(e));
+      toast(errMessage(e), 'err');
+    },
   });
 
   return (
@@ -44,7 +51,7 @@ export function Footer() {
         <div className="foot-grid">
           <Reveal className="foot-brand" from="soft">
             <div className="brand brand--dark">
-              <span className="brand__mark" aria-hidden>N</span>
+              <img className="brand__mark brand__mark--img" src="/logo.png" alt="Logo Nini Cake" width={46} height={46} />
               <span className="brand__text">
                 <span className="brand__name">
                   Nini <i>Cakes</i>
@@ -109,26 +116,41 @@ export function Footer() {
           <Reveal className="foot-news" from="right">
             <h4 className="foot-col__title eyebrow no-rule">Thư vị mới mỗi mùa</h4>
             <p className="small">Để lại email, Nini gửi ưu đãi theo mùa và vị mới trước khi kịp lên kệ.</p>
-            <form
-              className="foot-news__form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (email.trim()) sub.mutate(email.trim());
-              }}
-            >
-              <input
-                className="foot-news__input"
-                placeholder="email@cua-ban.vn"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                aria-label="Email nhận tin"
-              />
-              <button className="btn btn-gold btn-sm" type="submit" disabled={sub.isPending}>
-                <Send size={14} /> <span className="btn-ico">Gửi</span>
-              </button>
-            </form>
+            {subscribed ? (
+              <div className="foot-news__done" role="status">
+                <span className="foot-news__done-icon" aria-hidden><Check size={15} /></span>
+                <span className="small">Đã đăng ký thành công — thư vị mới sẽ đến hộp email của bạn.</span>
+              </div>
+            ) : (
+              <form
+                className="foot-news__form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const mail = email.trim();
+                  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) {
+                    setEmailError('Email chưa đúng định dạng (VD: ban@email.com)');
+                    return;
+                  }
+                  setEmailError('');
+                  sub.mutate(mail);
+                }}
+                noValidate
+              >
+                <input
+                  className={`foot-news__input${emailError ? ' is-invalid' : ''}`}
+                  placeholder="email@cua-ban.vn"
+                  type="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(''); }}
+                  aria-label="Email nhận tin"
+                  aria-invalid={!!emailError}
+                />
+                <button className="btn btn-gold btn-sm" type="submit" disabled={sub.isPending}>
+                  <Send size={14} /> <span className="btn-ico">{sub.isPending ? 'Đang gửi…' : 'Gửi'}</span>
+                </button>
+              </form>
+            )}
+            {emailError && <span className="foot-news__err tiny" role="alert">{emailError}</span>}
             {s?.bankName && (
               <p className="small foot-news__bank">
                 {s.bankName} • STK <b>{s.bankAccountNumber || '—'}</b> • {s.bankAccountName || '—'}

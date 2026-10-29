@@ -62,8 +62,8 @@ export default function CustomerDetailPage() {
               <div className="small muted">{user.role === 'CUSTOMER' ? 'Khách hàng' : user.role}</div>
             </div>
           </div>
-          <p className="small" style={{ margin: '4px 0' }}>✉️ {user.email}</p>
-          <p className="small" style={{ margin: '4px 0' }}>📞 {user.phone || 'Chưa có số điện thoại'}</p>
+          <p className="small" style={{ margin: '4px 0' }}>📞 {user.phone || 'Chưa có số điện thoại'} {user.role === 'CUSTOMER' && <span className="muted">(dùng để đăng nhập)</span>}</p>
+          {user.email && <p className="small" style={{ margin: '4px 0' }}>✉️ {user.email}</p>}
           <p style={{ margin: '10px 0 14px' }}>
             {user.status === 'BLOCKED'
               ? <FlexTag color="#c0392b">Đã khóa — không thể đăng nhập</FlexTag>
@@ -109,8 +109,9 @@ export default function CustomerDetailPage() {
               </table>
             </div>
           )}
-          <Link className="btn btn-outline btn-sm" style={{ marginTop: 10 }} to={`/orders?search=${encodeURIComponent(user.email)}`}>
-            Tìm tất cả đơn theo email →
+          <Link className="btn btn-outline btn-sm" style={{ marginTop: 10 }}
+            to={`/orders?search=${encodeURIComponent(user.phone || user.email || '')}`}>
+            Xem tất cả đơn của khách →
           </Link>
         </div>
       </div>

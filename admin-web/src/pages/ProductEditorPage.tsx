@@ -3,16 +3,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { AllergenDTO, CategoryAdminDTO, IngredientDTO, ProductDetailDTO } from '@shared/types';
-import { LOW_STOCK_THRESHOLD } from '@shared';
 import { get, post, put, uploadFile, errMessage } from '../lib/api';
 import { parseAmount, formatNumber } from '../lib/format';
-import { Loading, PageTitle, ZoomImage } from '../components/ui';
+import { Loading, MoneyInput, PageTitle, ZoomImage } from '../components/ui';
 import { useToast } from '../hooks/toast';
 
-interface VariantForm { id?: number; name: string; flavor: string; price: string; stock: string; isActive: boolean }
+interface VariantForm { id?: number; name: string; flavor: string; price: string; isActive: boolean }
 interface ImageForm { url: string; alt: string; isPrimary: boolean }
 
 const blank = { categoryId: '', name: '', shortDescription: '', description: '', compareAtPrice: '', isFeatured: false, isSeasonal: false, isActive: true };
+
+/** Bỏ dấu tiếng Việt để gợi ý nguyên liệu gần khớp khi gõ */
+const fold = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
 
 export default function ProductEditorPage() {
   const { id } = useParams();
@@ -32,12 +34,13 @@ export default function ProductEditorPage() {
   });
 
   const [form, setForm] = useState(blank);
-  const [variants, setVariants] = useState<VariantForm[]>([{ name: '', flavor: '', price: '', stock: '20', isActive: true }]);
+  const [variants, setVariants] = useState<VariantForm[]>([{ name: '', flavor: '', price: '', isActive: true }]);
   const [images, setImages] = useState<ImageForm[]>([]);
   const [ingredientIds, setIngredientIds] = useState<number[]>([]);
   const [allergenIds, setAllergenIds] = useState<number[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [busyUpload, setBusyUpload] = useState(false);
+  const [ingQuery, setIngQuery] = useState('');
 
   useEffect(() => {
     if (isEdit && detailQ.data && !hydrated) {
@@ -45,10 +48,10 @@ export default function ProductEditorPage() {
       setForm({
         categoryId: String(p.categoryId), name: p.name,
         shortDescription: p.shortDescription || '', description: p.description || '',
-        compareAtPrice: p.compareAtPrice ? String(p.compareAtPrice) : '',
+        compareAtPrice: p.compareAtPrice ? formatNumber(p.compareAtPrice) : '',
         isFeatured: p.isFeatured, isSeasonal: p.isSeasonal, isActive: p.isActive,
       });
-      setVariants(p.variants.map((v) => ({ id: v.id, name: v.name, flavor: v.flavor || '', price: String(v.price), stock: String(v.stock), isActive: v.isActive })));
+      setVariants(p.variants.map((v) => ({ id: v.id, name: v.name, flavor: v.flavor || '', price: formatNumber(v.price), isActive: v.isActive })));
       setImages(p.images.map((m) => ({ url: m.url || '', alt: m.alt || '', isPrimary: m.isPrimary })));
       setIngredientIds(p.ingredients);
       setAllergenIds(p.allergens);
@@ -73,7 +76,6 @@ export default function ProductEditorPage() {
           name: v.name.trim(),
           flavor: v.flavor.trim(),
           price: parseAmount(v.price),
-          stock: Math.max(0, Number(v.stock) || 0),
           isActive: v.isActive,
         })),
         images: images.filter((m) => m.url.trim()).map((m, i) => ({ url: m.url.trim(), alt: m.alt.trim() || null, isPrimary: m.isPrimary || (i === 0 && !images.some((x, j) => j !== i && x.isPrimary && x.url.trim())) })),
@@ -93,7 +95,40 @@ export default function ProductEditorPage() {
     onError: (e) => toast(errMessage(e), 'err'),
   });
 
-  const addVariant = () => setVariants([...variants, { name: '', flavor: '', price: '', stock: '20', isActive: true }]);
+  const ingredients = ingQ.data || [];
+  const typed = ingQuery.trim();
+  const typedFolded = fold(typed);
+  const exactMatch = typed.length >= 2 ? ingredients.find((i) => fold(i.name) === typedFolded) : undefined;
+  const suggestions =
+    typed.length >= 2 && !exactMatch
+      ? ingredients.filter((i) => !ingredientIds.includes(i.id) && fold(i.name).includes(typedFolded)).slice(0, 6)
+      : [];
+
+  const pickIngredient = (id: number) => {
+    setIngredientIds((ids) => (ids.includes(id) ? ids : [...ids, id]));
+    setIngQuery('');
+  };
+
+  const createIngredientM = useMutation({
+    mutationFn: (name: string) => post<IngredientDTO>('/admin/ingredients', { name }),
+    onSuccess: (r) => {
+      setIngredientIds((ids) => (ids.includes(r.data.id) ? ids : [...ids, r.data.id]));
+      setIngQuery('');
+      qc.invalidateQueries({ queryKey: ['admin-ingredients'] });
+      toast(`Đã tạo nguyên liệu “${r.data.name}”.`, 'ok');
+    },
+    onError: (e) => toast(errMessage(e, 'Không tạo được nguyên liệu.'), 'err'),
+  });
+
+  /** Gõ tên → khớp tên sẵn có thì chọn, không có thì tạo mới luôn trong danh mục nguyên liệu */
+  const commitIngredient = () => {
+    if (typed.length < 2) return;
+    if (exactMatch) return pickIngredient(exactMatch.id);
+    if (suggestions[0]) return pickIngredient(suggestions[0].id);
+    createIngredientM.mutate(typed);
+  };
+
+  const addVariant = () => setVariants([...variants, { name: '', flavor: '', price: '', isActive: true }]);
   const rmVariant = (i: number) => setVariants(variants.filter((_, x) => x !== i));
 
   /** Tải nhiều ảnh từ máy và thêm thẳng vào danh sách (tối đa 8) */
@@ -165,10 +200,8 @@ export default function ProductEditorPage() {
             </div>
             <div className="field">
               <label>Giá thị trường (so sánh, không bắt buộc)</label>
-              <input className="input" inputMode="numeric" value={form.compareAtPrice}
-                placeholder="VD: 380000"
-                onChange={(e) => setForm({ ...form, compareAtPrice: e.target.value })} />
-              {form.compareAtPrice && <span className="small muted">= {formatNumber(parseAmount(form.compareAtPrice))} đ</span>}
+              <MoneyInput value={form.compareAtPrice} placeholder="VD: 380.000"
+                onChange={(v) => setForm({ ...form, compareAtPrice: v })} />
             </div>
             <div className="field" style={{ gridColumn: 'span 2' }}>
               <label>Mô tả ngắn (hiển thị trên thẻ bánh)</label>
@@ -195,7 +228,7 @@ export default function ProductEditorPage() {
             <button type="button" className="btn btn-outline btn-sm" onClick={addVariant}>+ Thêm biến thể</button>
           </div>
           {variants.map((v, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr .9fr .7fr .6fr auto', gap: 10, alignItems: 'end', marginBottom: 10 }}>
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr minmax(180px, 1.2fr) .6fr auto', gap: 10, alignItems: 'end', marginBottom: 10 }}>
               <div className="field" style={{ marginBottom: 0 }}>
                 <label>Tên (VD: 16 lát (1kg))</label>
                 <input className="input" value={v.name} maxLength={80} onChange={(e) => setVariants(variants.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
@@ -205,14 +238,9 @@ export default function ProductEditorPage() {
                 <input className="input" value={v.flavor} maxLength={80} placeholder="VD: latte" onChange={(e) => setVariants(variants.map((x, j) => (j === i ? { ...x, flavor: e.target.value } : x)))} />
               </div>
               <div className="field" style={{ marginBottom: 0 }}>
-                <label>Giá (₫)</label>
-                <input className="input" inputMode="numeric" value={v.price} placeholder="320000"
-                  onChange={(e) => setVariants(variants.map((x, j) => (j === i ? { ...x, price: e.target.value } : x)))} />
-              </div>
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label>Tồn</label>
-                <input className="input" type="number" min={0} max={10000} value={v.stock}
-                  onChange={(e) => setVariants(variants.map((x, j) => (j === i ? { ...x, stock: e.target.value } : x)))} />
+                <label>Giá bán</label>
+                <MoneyInput value={v.price} placeholder="VD: 320.000"
+                  onChange={(next) => setVariants(variants.map((x, j) => (j === i ? { ...x, price: next } : x)))} />
               </div>
               <label className="check-row" style={{ transform: 'translateY(8px)' }}>
                 <input type="checkbox" checked={v.isActive}
@@ -222,14 +250,7 @@ export default function ProductEditorPage() {
                 disabled={variants.length <= 1}>✕</button>
             </div>
           ))}
-          {variants.some((v) => !Number(v.stock)) && (
-            <p className="small" style={{ color: 'var(--err)', fontWeight: 600 }}>
-              ⛔ Có biến thể tồn kho = 0: khách sẽ thấy “tạm hết” và <b>không thêm vào giỏ / đặt hàng được</b>. Nhập số phần khả dụng nếu bạn muốn bán.
-            </p>
-          )}
-          {variants.some((v) => Number(v.stock) <= LOW_STOCK_THRESHOLD) && (
-            <p className="small" style={{ color: 'var(--warn)' }}>⚠️ Có biến thể tồn dưới {LOW_STOCK_THRESHOLD} phần — sẽ xuất hiện cảnh báo trên dashboard.</p>
-          )}
+          <p className="small muted">Bánh làm theo đơn nên không giới hạn số phần — muốn tạm ngưng mẫu nào thì bỏ tick “bán”.</p>
         </div>
 
         {/* Ảnh */}
@@ -276,8 +297,41 @@ export default function ProductEditorPage() {
         {/* Nguyên liệu & dị ứng */}
         <div className="card pad mb-16">
           <h3 style={{ fontSize: 15, marginBottom: 10 }}>Nguyên liệu (gợi ý dị ứng tự động)</h3>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-            {(ingQ.data || []).map((ing) => (
+          <div className="ing-entry">
+            <input
+              className="input"
+              placeholder="Gõ tên nguyên liệu (VD: đậu phộng, matcha)… rồi Enter"
+              maxLength={60}
+              value={ingQuery}
+              onChange={(e) => setIngQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  commitIngredient();
+                } else if (e.key === 'Backspace' && !ingQuery && ingredientIds.length) {
+                  setIngredientIds(ingredientIds.slice(0, -1));
+                }
+              }}
+            />
+            <button type="button" className="btn btn-outline btn-sm" disabled={typed.length < 2 || createIngredientM.isPending} onClick={commitIngredient}>
+              {createIngredientM.isPending ? 'Đang thêm…' : exactMatch || suggestions.length ? 'Chọn' : 'Tạo mới'}
+            </button>
+          </div>
+          {typed.length >= 2 && (
+            <div className="ing-suggest">
+              {exactMatch ? (
+                <span className="small muted">Đã có “{exactMatch.name}” trong danh mục — Enter để gắn vào bánh.</span>
+              ) : suggestions.length ? (
+                suggestions.map((ing) => (
+                  <button key={ing.id} type="button" className="variant-pill" onClick={() => pickIngredient(ing.id)}>{ing.name}</button>
+                ))
+              ) : (
+                <span className="small muted">Danh mục chưa có “{typed}” — Enter sẽ tạo nguyên liệu mới rồi gắn vào bánh.</span>
+              )}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {ingredients.map((ing) => (
               <button key={ing.id} type="button" className={`variant-pill ${ingredientIds.includes(ing.id) ? 'selected' : ''}`}
                 onClick={() => setIngredientIds(ingredientIds.includes(ing.id) ? ingredientIds.filter((x) => x !== ing.id) : [...ingredientIds, ing.id])}>
                 {ing.name}

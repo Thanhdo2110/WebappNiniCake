@@ -11,6 +11,7 @@ import { attachCart } from '../middlewares/cart.middleware.js';
 import { productController } from '../controllers/product.controller.js';
 import { cartController } from '../controllers/cart.controller.js';
 import { cartCheckoutCtl } from '../controllers/order.controller.js';
+import { payosCtl } from '../controllers/payos.controller.js';
 import { commerceController } from '../controllers/commerce.controller.js';
 import { contentController } from '../controllers/content.controller.js';
 import { reportController } from '../controllers/report.controller.js';
@@ -48,6 +49,16 @@ const authLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { success: false, message: 'Quý khách thao tác nhiều trong thời gian ngắn. Vui lòng đợi một lát rồi thử lại.' },
+});
+
+/* Ảnh đính kèm tin nhắn liên hệ: khách vãng lai không có tài khoản để định danh,
+   nên chặn bằng định mức theo IP — đủ cho người gửi thật, chặn được việc đổ tệp. */
+const publicUploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 8,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { success: false, message: 'Bạn tải ảnh lên nhiều quá. Vui lòng thử lại sau 15 phút.' },
 });
 
 /* ===================== XÁC THỰC & HỒ SƠ ===================== */
@@ -99,6 +110,11 @@ router.post('/orders', requireAuth, validate(checkoutSchema), cartCheckoutCtl.ch
 router.get('/orders', requireAuth, cartCheckoutCtl.myOrders);
 router.get('/orders/:id', requireAuth, validateId, cartCheckoutCtl.myOrder);
 router.post('/orders/:id/cancel', requireAuth, validateId, cartCheckoutCtl.cancelMine);
+
+/* ---- Chuyển khoản online (PayOS): tài khoản ảo + QR, đối soát ở server ---- */
+router.post('/orders/:id/payments', requireAuth, validateId, payosCtl.link);
+router.post('/orders/:id/payments/sync', requireAuth, validateId, payosCtl.sync);
+router.post('/webhooks/payos', payosCtl.webhook);
 
 /* ===================== ĐÁNH GIÁ: KHÁCH ===================== */
 router.post('/reviews', requireAuth, validate(reviewCreateSchema), commerceController.createReview);
@@ -188,6 +204,8 @@ router.get('/admin/reports/customers.csv', requireStaff, reportController.custom
 router.post('/admin/uploads', requireStaff, multerSingle(), uploadController.single);
 /* Khách gửi ảnh tham khảo cho bánh đặt theo yêu cầu — chỉ ảnh, tối đa MAX_UPLOAD_MB */
 router.post('/uploads', requireAuth, multerSingle(), uploadController.single);
+/* Trang Liên hệ: khách chưa đăng nhập vẫn đính được ảnh bánh muốn đặt */
+router.post('/uploads/attach', publicUploadLimiter, multerSingle(), uploadController.single);
 
 /* ===================== TRANG CHỦ API ===================== */
 router.get('/', (_req, res) => {

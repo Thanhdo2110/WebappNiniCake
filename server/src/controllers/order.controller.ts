@@ -6,7 +6,7 @@ import { orderToDTO } from '../utils/dto.js';
 export const cartCheckoutCtl = bindController({
   /* khách đặt hàng */
   async checkout(req: Request, res: Response) {
-    return created(res, await orderService.checkout(req, req.body), 'Đơn của quý khách đã được ghi nhận. Tiệm sẽ liên hệ xác nhận sớm nhất!');
+    return created(res, await orderService.checkout(req, req.body));
   },
   async myOrders(req: Request, res: Response) {
     const page = Math.max(1, Number(req.query.page) || 1);

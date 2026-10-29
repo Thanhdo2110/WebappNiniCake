@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeTotals, evalCoupon, shippingFeeFor } from '../src/utils/totals.js';
-import { canTransition, DELIVERY_TIME_SLOTS } from '@ninicakes/shared';
+import { canTransition, DELIVERY_TIME_SLOTS, slotStartHour } from '@ninicakes/shared';
 
 describe('evalCoupon (tính mã giảm giá)', () => {
   const percent = { type: 'PERCENT', value: 10, minSubtotal: 200000, maxDiscount: 100000 };
@@ -80,10 +80,13 @@ describe('canTransition (luồng trạng thái đơn hàng)', () => {
     expect(canTransition('PENDING', 'COMPLETED')).toBe(false);
   });
 
-  it('khung giờ nhận bánh hợp lệ định dạng HH:MM - HH:MM', () => {
+  it('khung giờ nhận bánh hợp lệ định dạng HHh-HHh, mỗi khung 1 giờ', () => {
     expect(DELIVERY_TIME_SLOTS.length).toBeGreaterThan(2);
     for (const slot of DELIVERY_TIME_SLOTS) {
-      expect(slot).toMatch(/^\d{2}:\d{2} - \d{2}:\d{2}$/);
+      expect(slot).toMatch(/^\d{2}h-\d{2}h$/);
+    }
+    for (let i = 1; i < DELIVERY_TIME_SLOTS.length; i++) {
+      expect(slotStartHour(DELIVERY_TIME_SLOTS[i])).toBe(slotStartHour(DELIVERY_TIME_SLOTS[i - 1]) + 1);
     }
   });
 });

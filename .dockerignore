@@ -3,3 +3,5 @@
 **/.vite
 server/uploads
 .git
+# Secret không được nằm trong image layer (kể cả server/.env cho dev host)
+**/.env

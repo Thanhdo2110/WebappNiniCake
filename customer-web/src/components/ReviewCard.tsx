@@ -15,6 +15,7 @@ export function ReviewCard({
   author,
   rating,
   date,
+  dateISO,
   comment,
   imageUrl,
   reply,
@@ -24,6 +25,7 @@ export function ReviewCard({
   author: string;
   rating: number;
   date: string;
+  dateISO?: string;
   comment?: string | null;
   imageUrl?: string | null;
   reply?: string | null;
@@ -40,7 +42,7 @@ export function ReviewCard({
             <span className="review-card__stars"><Stars value={rating} size={15} /></span>
           </div>
           <div className="review-card__side">
-            <time className="small muted">{date}</time>
+            <time className="small muted" dateTime={dateISO}>{date}</time>
             {aside}
           </div>
         </header>

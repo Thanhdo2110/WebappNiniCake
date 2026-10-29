@@ -61,7 +61,7 @@ export default function CustomersPage() {
                   <tr key={u.id}>
                     <td>
                       <b><Link to={`/customers/${u.id}`} style={{ color: 'var(--cocoa)' }}>{u.fullName}</Link></b>
-                      <div className="small muted">{u.email}</div>
+                      <div className="small muted">{u.email || '—'}</div>
                     </td>
                     <td className="small">{u.phone || '—'}</td>
                     <td>{u.orderCount}</td>

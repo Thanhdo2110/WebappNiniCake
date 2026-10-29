@@ -36,18 +36,22 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'settings.manage': 'Cài đặt cửa hàng',
 };
 
-/** Khung giờ nhận bánh trong ngày */
+/** Khung giờ nhận bánh trong ngày — mỗi khung 1 giờ, từ 8h đến 21h */
 export const DELIVERY_TIME_SLOTS = [
-  '08:00 - 10:00',
-  '10:00 - 12:00',
-  '12:00 - 14:00',
-  '14:00 - 16:00',
-  '16:00 - 18:00',
-  '18:00 - 21:30',
+  '08h-09h',
+  '09h-10h',
+  '10h-11h',
+  '11h-12h',
+  '12h-13h',
+  '13h-14h',
+  '14h-15h',
+  '15h-16h',
+  '16h-17h',
+  '17h-18h',
+  '18h-19h',
+  '19h-20h',
+  '20h-21h',
 ] as const;
-
-/** Biến thể dưới ngưỡng này sẽ cảnh báo trên dashboard */
-export const LOW_STOCK_THRESHOLD = 6;
 
 /** Giăm tối đa của 1 dòng trong giỏ hàng */
 export const MAX_CART_QUANTITY = 20;

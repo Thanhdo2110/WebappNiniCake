@@ -9,12 +9,27 @@ import path from 'node:path';
 const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const PORT = 9333;
 const OUT = path.resolve('scripts/shots');
+const WIN = process.env.WIN || '1440,2200';
+const TAG = process.env.TAG ? `-${process.env.TAG}` : '';
+const PROFILE = path.resolve('scripts/.chrome-shot-profile');
 fs.mkdirSync(OUT, { recursive: true });
+fs.mkdirSync(PROFILE, { recursive: true });
 
 const chrome = spawn(CHROME, [
   '--headless=new', `--remote-debugging-port=${PORT}`, '--no-first-run', '--no-default-browser-check',
-  '--disable-gpu', '--hide-scrollbars', '--window-size=1440,2200', 'about:blank',
+  '--disable-gpu', '--hide-scrollbars', '--disable-extensions', `--window-size=${WIN}`,
+  `--user-data-dir=${PROFILE}`, 'about:blank',
 ], { stdio: 'ignore' });
+
+// Đảm bảo Chrome headless luôn được dọn dẹp, kể cả khi script lỗi giữa chừng
+process.on('exit', () => {
+  try { chrome.kill(); } catch { /* đã thoát */ }
+});
+process.on('uncaughtException', (err) => {
+  console.error('[fatal]', err?.message ?? err);
+  try { chrome.kill(); } catch { /* đã thoát */ }
+  process.exit(1);
+});
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -35,13 +50,32 @@ const ws = new WebSocket((await targets()).webSocketDebuggerUrl);
 let seq = 0;
 const pending = new Map();
 const logs = [];
-function send(method, params = {}) {
+let loadWaiters = [];
+function sendOnce(method, params = {}) {
   const id = ++seq;
   ws.send(JSON.stringify({ id, method, params }));
   return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
 }
 
+/** Gửi lệnh CDP – tự thử lại khi trang vừa điều hướng/reload (Vite HMR) làm rớt lệnh đang bay. */
+async function send(method, params = {}) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await sendOnce(method, params);
+    } catch (err) {
+      const msg = String(err?.message ?? '');
+      const retriable =
+        msg.includes('navigated or closed') || msg.includes('Target closed') || msg.includes('Session closed');
+      if (!retriable || attempt === 2) throw err;
+      await wait(700);
+    }
+  }
+  throw new Error('CDP không phản hồi');
+}
+
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
+ws.onclose = (ev) => console.info(`[cdp] đóng kết nối (code=${ev.code})`);
+chrome.on('exit', (code) => console.info(`[chrome] thoát (code=${code})`));
 ws.onmessage = (ev) => {
   const m = JSON.parse(ev.data);
   if (m.id && pending.has(m.id)) {
@@ -49,6 +83,11 @@ ws.onmessage = (ev) => {
     pending.delete(m.id);
     if (m.error) p.reject(new Error(JSON.stringify(m.error)));
     else p.resolve(m.result);
+  }
+  if (m.method === 'Page.loadEventFired') {
+    const waiters = loadWaiters;
+    loadWaiters = [];
+    waiters.forEach((fn) => fn());
   }
   if (m.method === 'Runtime.consoleAPICalled' && (m.params.type === 'error' || m.params.type === 'warning')) {
     const text = m.params.args.map((a) => a.value ?? a.description ?? a.type).join(' ');
@@ -62,11 +101,48 @@ ws.onmessage = (ev) => {
 await send('Network.enable');
 await send('Runtime.enable');
 await send('Page.enable');
+if (process.env.MOBILE) {
+  const [mw, mh] = (process.env.MOBILE || '390,900').split(',').map(Number);
+  await send('Emulation.setDeviceMetricsOverride', {
+    width: mw || 390, height: mh || 900, deviceScaleFactor: 1, mobile: true,
+  });
+  await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+}
 
 async function evalJs(expression, awaitPromise = false) {
   const r = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise });
   if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? 'JS lỗi');
   return r.result.value;
+}
+
+/** Điều hướng và chờ trang load xong thật sự (tránh chụp nhầm trang trước). */
+async function goto(url) {
+  let settle;
+  const loaded = new Promise((res) => {
+    settle = res;
+    loadWaiters.push(res);
+  });
+  await send('Page.navigate', { url });
+  await Promise.race([loaded, wait(8000).then(() => { loadWaiters = loadWaiters.filter((f) => f !== settle); })]);
+  await wait(1400);
+}
+
+/** Chụp màn hình; FULL=1 chụp toàn bộ trang (dài), ngược lại chỉ khung nhìn. */
+async function shoot(name) {
+  const file = path.join(OUT, `${name}${TAG}.png`);
+  let params = { format: 'png' };
+  if (process.env.FULL) {
+    const m = await send('Page.getLayoutMetrics');
+    const cs = m.cssContentSize ?? m.contentSize;
+    params = {
+      format: 'png',
+      captureBeyondViewport: true,
+      clip: { x: 0, y: 0, width: Math.ceil(cs.width), height: Math.min(Math.ceil(cs.height), 16000), scale: 1 },
+    };
+  }
+  const shot = await send('Page.captureScreenshot', params);
+  fs.writeFileSync(file, Buffer.from(shot.data, 'base64'), 'base64');
+  return file;
 }
 
 const pages = [
@@ -88,11 +164,9 @@ const pick = (arr) => (only ? arr.filter(([n]) => only.some((o) => n === o || n.
 const report = [];
 for (const [name, url] of pick(pages)) {
   logs.length = 0;
-  await send('Page.navigate', { url });
-  await wait(3000);
-  const shot = await send('Page.captureScreenshot', { format: 'png' });
-  const file = path.join(OUT, `${name}.png`);
-  fs.writeFileSync(file, Buffer.from(shot.data, 'base64'), 'base64');
+  console.info(`[shot] ${name}`);
+  await goto(url);
+  const file = await shoot(name);
   const info = await evalJs('JSON.stringify({t:document.title,h1:(document.querySelector("h1")||{}).innerText,b:document.body.innerText.length})');
   report.push(`${name} -> ${file} | ${info} | lỗi: ${logs.length ? logs.slice(0, 3).join(" ;; ").slice(0, 240) : "KHÔNG"}`);
 }
@@ -123,11 +197,8 @@ if (!process.env.NO_ADMIN && wantMember) {
   ];
   for (const [name, url] of pick(memberPages)) {
     logs.length = 0;
-    await send('Page.navigate', { url });
-    await wait(2800);
-    const shot = await send('Page.captureScreenshot', { format: 'png' });
-    const file = path.join(OUT, `${name}.png`);
-    fs.writeFileSync(file, Buffer.from(shot.data, 'base64'), 'base64');
+    await goto(url);
+    const file = await shoot(name);
     const info = await evalJs('JSON.stringify({t:document.title,h1:(document.querySelector("h1")||{}).innerText,b:document.body.innerText.length})');
     report.push(`${name} -> ${file} | ${info} | lỗi: ${logs.length ? logs.slice(0, 3).join(" ;; ").slice(0, 240) : "KHÔNG"}`);
   }
@@ -187,11 +258,8 @@ if (!process.env.NO_ADMIN && wantAdmin) {
   ];
   for (const [name, url] of pick(adminPages)) {
     logs.length = 0;
-    await send('Page.navigate', { url });
-    await wait(2600);
-    const shot = await send('Page.captureScreenshot', { format: 'png' });
-    const file = path.join(OUT, `${name}.png`);
-    fs.writeFileSync(file, Buffer.from(shot.data, 'base64'), 'base64');
+    await goto(url);
+    const file = await shoot(name);
     const info = await evalJs('JSON.stringify({t:document.title,h1:(document.querySelector("h1")||{}).innerText,b:document.body.innerText.length})');
     report.push(`${name} -> ${file} | ${info} | lỗi: ${logs.length ? logs.slice(0, 3).join(" ;; ").slice(0, 240) : "KHÔNG"}`);
   }

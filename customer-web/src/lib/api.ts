@@ -120,3 +120,13 @@ export async function uploadFile(file: File): Promise<{ url: string }> {
   });
   return res.data.data;
 }
+
+/** Ảnh bánh muốn đặt đính kèm tin nhắn liên hệ — dành cho khách chưa có tài khoản */
+export async function uploadGuestImage(file: File): Promise<{ url: string }> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await instance.post<ApiSuccess<{ url: string }>>('/uploads/attach', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data.data;
+}

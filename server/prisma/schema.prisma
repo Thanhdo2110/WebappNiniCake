@@ -68,12 +68,13 @@ model Role {
   @@map("roles")
 }
 
+/// Khách hàng đăng nhập bằng số điện thoại, email chỉ còn bắt buộc với tài khoản quản trị.
 model User {
   id           Int        @id @default(autoincrement())
-  email        String     @unique @db.VarChar(190)
+  email        String?    @unique @db.VarChar(190)
   passwordHash String     @db.VarChar(255)
   fullName     String     @db.VarChar(190)
-  phone        String?    @db.VarChar(30)
+  phone        String?    @unique @db.VarChar(30)
   avatarUrl    String?    @db.VarChar(500)
   roleId       Int
   role         Role       @relation(fields: [roleId], references: [id])
@@ -393,6 +394,8 @@ model Payment {
   status    PaymentStatusType @default(UNPAID)
   amount    Int
   reference String?           @db.VarChar(255)
+  /// Bội thu nhà cung cấp: { provider, paymentLinkId, bin, accountNumber, accountName, qrCode, checkoutUrl }
+  providerMeta Json?
   paidAt    DateTime?
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
@@ -519,6 +522,7 @@ model Message {
   phone     String?  @db.VarChar(30)
   subject   String?  @db.VarChar(255)
   content   String   @db.Text
+  imageUrl  String?  @db.VarChar(500)
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 

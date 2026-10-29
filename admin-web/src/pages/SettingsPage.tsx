@@ -3,11 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import type { StoreSettingsDTO } from '@shared/types';
 import { get, put, errMessage } from '../lib/api';
-import { formatVND, parseAmount } from '../lib/format';
-import { Loading, PageTitle, Empty } from '../components/ui';
+import { formatNumber, formatVND, parseAmount } from '../lib/format';
+import { Loading, MoneyInput, PageTitle, Empty } from '../components/ui';
 import { useToast } from '../hooks/toast';
 
-type Field = keyof StoreSettingsDTO;
+/* payosEnabled do server tính ra, không phải trường admin chỉnh được */
+type Field = Exclude<keyof StoreSettingsDTO, 'payosEnabled'>;
 const TEXT_FIELDS: Array<{ key: Field; label: string; hint?: string; email?: boolean; min?: number; max?: number }> = [
   { key: 'name', label: 'Tên cửa hàng (2–120 ký tự)', min: 2, max: 120 },
   { key: 'slogan', label: 'Khẩu hiệu (không bắt buộc)', max: 200 },
@@ -48,8 +49,8 @@ export default function SettingsPage() {
       bankName: q.data.bankName,
       bankAccountName: q.data.bankAccountName,
       bankAccountNumber: q.data.bankAccountNumber,
-      shippingFeeVnd: String(q.data.shippingFeeVnd),
-      freeShippingMinVnd: String(q.data.freeShippingMinVnd),
+      shippingFeeVnd: formatNumber(q.data.shippingFeeVnd),
+      freeShippingMinVnd: formatNumber(q.data.freeShippingMinVnd),
     });
   }, [q.data]);
 
@@ -108,15 +109,15 @@ export default function SettingsPage() {
         <h3 style={{ fontSize: 15, marginBottom: 12 }}>Giao bánh & thanh toán</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div className="field">
-            <label>Phí giao bánh mặc định (đồng, hiện tại: {formatVND(q.data.shippingFeeVnd)})</label>
-            <input className="input" type="number" min={0} max={500000} value={form.shippingFeeVnd}
-              onChange={(e) => setForm((s) => ({ ...s, shippingFeeVnd: e.target.value }))} />
+            <label>Phí giao bánh mặc định (hiện tại: {formatVND(q.data.shippingFeeVnd)})</label>
+            <MoneyInput value={form.shippingFeeVnd} placeholder="VD: 25.000"
+              onChange={(v) => setForm((s) => ({ ...s, shippingFeeVnd: v }))} />
             <div className="small muted" style={{ marginTop: 4 }}>Áp dụng cho đơn giao tận nơi chưa đạt mức miễn phí.</div>
           </div>
           <div className="field">
-            <label>Miễn phí giao từ tổng tiền (đồng, hiện tại: {formatVND(q.data.freeShippingMinVnd)})</label>
-            <input className="input" type="number" min={0} max={100000000} value={form.freeShippingMinVnd}
-              onChange={(e) => setForm((s) => ({ ...s, freeShippingMinVnd: e.target.value }))} />
+            <label>Miễn phí giao từ tổng tiền (hiện tại: {formatVND(q.data.freeShippingMinVnd)})</label>
+            <MoneyInput value={form.freeShippingMinVnd} placeholder="VD: 500.000"
+              onChange={(v) => setForm((s) => ({ ...s, freeShippingMinVnd: v }))} />
             <div className="small muted" style={{ marginTop: 4 }}>Đơn đạt mốc này được miễn phí giao trong phạm vi cửa hàng.</div>
           </div>
         </div>

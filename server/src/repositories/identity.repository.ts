@@ -18,7 +18,7 @@ export const identityRepository = {
   },
   async createUser(data: {
     roleId: number;
-    email: string;
+    email?: string | null;
     passwordHash: string;
     fullName: string;
     phone?: string | null;
@@ -26,7 +26,7 @@ export const identityRepository = {
     return prisma.user.create({
       data: {
         roleId: data.roleId,
-        email: data.email,
+        email: data.email ?? null,
         passwordHash: data.passwordHash,
         fullName: data.fullName,
         phone: data.phone ?? null,
@@ -37,6 +37,12 @@ export const identityRepository = {
   async findByEmail(email: string) {
     return prisma.user.findFirst({
       where: { email: email.toLowerCase(), deletedAt: null },
+      include: { role: true },
+    });
+  },
+  async findByPhone(phone: string) {
+    return prisma.user.findFirst({
+      where: { phone, deletedAt: null },
       include: { role: true },
     });
   },

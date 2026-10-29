@@ -8,7 +8,7 @@ import { Loading, PageTitle, Empty, Pager, Modal } from '../components/ui';
 import { useToast } from '../hooks/toast';
 
 type AdminReviewRow = Omit<ReviewDTO, 'user'> & {
-  user: { id: number; fullName: string; email: string } | null;
+  user: { id: number; fullName: string; email: string | null } | null;
   product: { name?: string } | null;
   isApproved: boolean;
   isHidden: boolean;
@@ -87,7 +87,7 @@ export default function ReviewsPage() {
                   <tr key={r.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</td>
                     <td className="small"><b>{(r.product as { name?: string } | null)?.name || `#${r.productId}`}</b></td>
-                    <td className="small">{r.user ? <><b>{r.user.fullName}</b><div className="small muted">{r.user.email}</div></> : 'Khách rõ mặt'}</td>
+                    <td className="small">{r.user ? <><b>{r.user.fullName}</b><div className="small muted">{r.user.email || '—'}</div></> : 'Khách rõ mặt'}</td>
                     <td style={{ maxWidth: 340 }}>
                       <div className="small">{r.comment || '—'}</div>
                       {r.reply && <div className="small" style={{ color: 'var(--ok)' }}>↳ {r.reply}</div>}

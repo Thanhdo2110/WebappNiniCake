@@ -1,37 +1,47 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
-    container_name: ninicakes-mysql
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ninicakes
       MYSQL_USER: nini
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-nini_secret_2024}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret_2024}
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     ports:
-      - '3308:3306'
+      # Chỉ nhét vào vòng lặp máy chủ để tiện dùng tool quản trị DB tại chỗ.
+      # Không mở ra 0.0.0.0: VPS có IP công khai sẽ biến MySQL thành cổng chào.
+      # Container server/customer-web/admin-web truy cập MySQL qua tên `mysql`
+      # trên network nội bộ của docker, không cần tới cổng này.
+      - "127.0.0.1:3308:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${MYSQL_ROOT_PASSWORD:-root_secret_2024}']
+      test:
+        - CMD-SHELL
+        - mysqladmin ping --host=127.0.0.1 --user=root --password="$${MYSQL_ROOT_PASSWORD}" --silent
       interval: 8s
       timeout: 5s
       retries: 12
+      start_period: 20s
 
   server:
     build:
       context: .
       dockerfile: server/Dockerfile
-    container_name: ninicakes-server
     restart: unless-stopped
     depends_on:
       mysql:
         condition: service_healthy
     ports:
-      - '4000:4000'
+      # Khách vào bằng nginx (8080/8081) — hai container web đã tự proxy /api và
+      # /uploads về http://server:4000 qua network nội bộ. Mở rộng công khai cổng
+      # 4000 chỉ tổ cho bỏ qua CORS/rate-limit mà nginx đang áp dụng.
+      # Bind 127.0.0.1 để còn curl test tại chỗ; từ máy khác thì dùng SSH tunnel:
+      #   ssh -L 4000:127.0.0.1:4000 user@vps
+      - "127.0.0.1:4000:4000"
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -40,31 +50,58 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev_refresh_secret_change_me}
       CLIENT_ORIGINS: http://localhost:5173,http://localhost:5174,http://localhost:8080,http://localhost:8081
       UPLOAD_DIR: /app/uploads
-      SEED_SAMPLE_DATA: 'true'
+      SEED_SAMPLE_DATA: ${SEED_SAMPLE_DATA:-true}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ninicakes.vn}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
+      PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID:-}
+      PAYOS_API_KEY: ${PAYOS_API_KEY:-}
+      PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY:-}
+      PAYOS_API_BASE_URL: ${PAYOS_API_BASE_URL:-}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8080}
     volumes:
       - uploads_data:/app/uploads
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:4000/openapi.json').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
   customer-web:
     build:
       context: .
       dockerfile: customer-web/Dockerfile
-    container_name: ninicakes-customer-web
     restart: unless-stopped
     depends_on:
-      - server
+      server:
+        condition: service_healthy
     ports:
-      - '8080:80'
+      - "8080:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   admin-web:
     build:
       context: .
       dockerfile: admin-web/Dockerfile
-    container_name: ninicakes-admin-web
     restart: unless-stopped
     depends_on:
-      - server
+      server:
+        condition: service_healthy
     ports:
-      - '8081:80'
+      - "8081:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mysql_data:

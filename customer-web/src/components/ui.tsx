@@ -1,6 +1,8 @@
 /** Khối UI dùng xuyên suốt storefront: reveal, sao, tiêu đề đề mục, trạng thái */
+import { forwardRef, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { CSSProperties, ReactNode } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import type { CSSProperties, InputHTMLAttributes, ReactNode } from 'react';
 import { useInView } from '../hooks/motion';
 
 type RevealFrom = 'up' | 'soft' | 'left' | 'right' | 'scale' | 'blur';
@@ -13,6 +15,7 @@ export function Reveal({
   delay = 0,
   style,
   as = 'div',
+  id,
 }: {
   children: ReactNode;
   className?: string;
@@ -20,16 +23,17 @@ export function Reveal({
   delay?: number;
   style?: CSSProperties;
   as?: 'div' | 'section' | 'aside' | 'article' | 'li';
+  id?: string;
 }) {
   const { ref, inView } = useInView<HTMLDivElement>();
   const mod = from === 'up' ? '' : `reveal--${from}`;
   const cls = `reveal${mod ? ` ${mod}` : ''}${inView ? ' in-view' : ''}${className ? ` ${className}` : ''}`;
   const withDelay = delay ? ({ '--d': `${delay}ms`, ...style } as CSSProperties) : style;
-  if (as === 'li') return <li ref={ref as React.Ref<HTMLLIElement>} className={cls} style={withDelay}>{children}</li>;
-  if (as === 'aside') return <aside ref={ref as React.Ref<HTMLElement>} className={cls} style={withDelay}>{children}</aside>;
-  if (as === 'article') return <article ref={ref as React.Ref<HTMLElement>} className={cls} style={withDelay}>{children}</article>;
-  if (as === 'section') return <section ref={ref as React.Ref<HTMLElement>} className={cls} style={withDelay}>{children}</section>;
-  return <div ref={ref} className={cls} style={withDelay}>{children}</div>;
+  if (as === 'li') return <li id={id} ref={ref as React.Ref<HTMLLIElement>} className={cls} style={withDelay}>{children}</li>;
+  if (as === 'aside') return <aside id={id} ref={ref as React.Ref<HTMLElement>} className={cls} style={withDelay}>{children}</aside>;
+  if (as === 'article') return <article id={id} ref={ref as React.Ref<HTMLElement>} className={cls} style={withDelay}>{children}</article>;
+  if (as === 'section') return <section id={id} ref={ref as React.Ref<HTMLElement>} className={cls} style={withDelay}>{children}</section>;
+  return <div id={id} ref={ref} className={cls} style={withDelay}>{children}</div>;
 }
 
 /** Con giống: các con chạy vào lần lượt theo thứ tự DOM. */
@@ -172,5 +176,96 @@ export function StatusPill({ color, children }: { color: string; children: React
       <i aria-hidden />
       {children}
     </span>
+  );
+}
+
+/** Ô mật khẩu có nút hiện/ẩn — nhận props như <input> thường (tương thích register của RHF).
+ * Bắt buộc forwardRef: register() của react-hook-form gắn ref vào input thật để đọc giá trị,
+ * thiếu ref thì RHF không lấy được mật khẩu → validate báo "Required" dù đã gõ đủ. */
+export const PasswordInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  function PasswordInput({ className = '', ...props }, ref) {
+    const [show, setShow] = useState(false);
+    return (
+      <div className="input-with-toggle">
+        <input {...props} ref={ref} type={show ? 'text' : 'password'} className={`input${className ? ` ${className}` : ''}`} />
+        <button
+          type="button"
+          className="input-toggle"
+          onClick={() => setShow((v) => !v)}
+          aria-label={show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+        >
+          {show ? <EyeOff size={15} /> : <Eye size={15} />}
+        </button>
+      </div>
+    );
+  }
+);
+
+/** Ô nhập mã OTP 6 số: tự nhảy ô, hỗ trợ dán, Backspace lùi. */
+export function OtpInput({
+  value,
+  onChange,
+  length = 6,
+  disabled = false,
+  ariaLabel = 'Mã xác nhận 6 số',
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  length?: number;
+  disabled?: boolean;
+  ariaLabel?: string;
+}) {
+  const refs = useRef<Array<HTMLInputElement | null>>([]);
+  const digits = value.replace(/\D+/g, '');
+
+  const emit = (next: string) => onChange(next.slice(0, length));
+
+  const place = (from: number, raw: string) => {
+    const incoming = raw.replace(/\D+/g, '');
+    if (!incoming) return;
+    const arr = Array.from({ length }, (_, k) => digits[k] || '');
+    for (let k = 0; k < incoming.length && from + k < length; k++) arr[from + k] = incoming[k];
+    emit(arr.join(''));
+    refs.current[Math.min(from + incoming.length, length - 1)]?.focus();
+  };
+
+  return (
+    <div className="otp-boxes" role="group" aria-label={ariaLabel}>
+      {Array.from({ length }, (_, i) => (
+        <input
+          key={i}
+          ref={(el) => { refs.current[i] = el; }}
+          className={`otp-box${digits[i] ? ' is-filled' : ''}`}
+          type="text"
+          inputMode="numeric"
+          autoComplete={i === 0 ? 'one-time-code' : 'off'}
+          maxLength={i === 0 ? length : 1}
+          value={digits[i] || ''}
+          disabled={disabled}
+          aria-label={`Chữ số thứ ${i + 1}`}
+          onChange={(e) => {
+            if (e.target.value.length > 1) { place(0, e.target.value); return; }
+            place(i, e.target.value);
+          }}
+          onPaste={(e) => { e.preventDefault(); place(i, e.clipboardData.getData('text')); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Backspace') {
+              e.preventDefault();
+              const arr = Array.from({ length }, (_, k) => digits[k] || '');
+              if (arr[i]) {
+                arr[i] = '';
+              } else if (i > 0) {
+                arr[i - 1] = '';
+                refs.current[i - 1]?.focus();
+              }
+              emit(arr.filter(Boolean).join(''));
+            }
+            if (e.key === 'ArrowLeft' && i > 0) refs.current[i - 1]?.focus();
+            if (e.key === 'ArrowRight' && i < length - 1) refs.current[i + 1]?.focus();
+          }}
+          onFocus={(e) => e.target.select()}
+        />
+      ))}
+    </div>
   );
 }

@@ -23,8 +23,11 @@ async function req(method, path, { token, body, form } = {}) {
   return { status: res.status, json, text };
 }
 
-const login = async (email, password) =>
-  (await req('POST', '/auth/login', { body: { email, password } })).json?.data?.accessToken;
+/** Khách hàng đăng nhập bằng SĐT, tài khoản quản trị vẫn dùng email */
+const login = async (identifier, password) =>
+  (await req('POST', '/auth/login', {
+    body: identifier.includes('@') ? { email: identifier, password } : { phone: identifier, password },
+  })).json?.data?.accessToken;
 
 const results = [];
 const check = (name, ok, detail = '') => {
@@ -34,9 +37,9 @@ const check = (name, ok, detail = '') => {
 
 const main = async () => {
   const AT = await login('admin@ninicakes.vn', 'Admin@123');
-  const CT = await login('vy.nguyen@example.com', 'Customer@123');
+  const CT = await login('0901332201', 'Customer@123');
   const ST = await login('staff@ninicakes.vn', 'Staff@123');
-  check('login admin/customer/staff', !!(AT && CT && ST));
+  check('login admin/staff bằng email + khách hàng bằng SĐT', !!(AT && CT && ST));
 
   /* ID sau khi seed/migrate có thể thay đổi → luôn lấy dữ liệu thật từ API, không hardcode */
   const list = (await req('GET', '/products?page=1&limit=24', { token: CT })).json?.data?.items ?? [];
@@ -199,7 +202,7 @@ const main = async () => {
   /* 9. Refresh token / logout */
   const cred = await fetch(API + '/auth/login', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'vy.nguyen@example.com', password: 'Customer@123' }),
+    body: JSON.stringify({ phone: '0901332201', password: 'Customer@123' }),
   });
   const cookie = cred.headers.getSetCookie?.().find((c) => c.startsWith('NC_RT=')) ?? '';
   const refreshVal = cookie.split(';')[0];
@@ -214,8 +217,20 @@ const main = async () => {
   check('refresh token rác -> 401 (không 500)', garbage.status === 401, String(garbage.status));
 
   /* 10. Validation & SEO endpoints */
-  const badReg = await req('POST', '/auth/register', { body: { email: 'not-an-email', password: '123', fullName: '' } });
+  const badReg = await req('POST', '/auth/register', { body: { phone: 'not-a-phone', password: '12', fullName: '' } });
   check('Zod validation trả 422 + errors tiếng Việt', badReg.status === 422, JSON.stringify(badReg.json?.errors).slice(0, 120));
+
+  /* Đăng ký kiểu mới: chỉ SĐT + mật khẩu 4 ký tự, không email */
+  const newPhone = '09' + String(Date.now()).slice(-8);
+  const reg = await req('POST', '/auth/register', { body: { fullName: 'Khách Test Mới', phone: newPhone, password: '1234' } });
+  check('đăng ký chỉ cần SĐT + mật khẩu 4 ký tự', reg.status === 201 && !!reg.json?.data?.accessToken, JSON.stringify(reg.json?.message ?? reg.status));
+  check('tài khoản mới không có email', reg.json?.data?.user?.email === null, JSON.stringify(reg.json?.data?.user ?? {}));
+  const reLogin = await req('POST', '/auth/login', { body: { phone: newPhone, password: '1234' } });
+  check('đăng nhập lại bằng SĐT vừa đăng ký', reLogin.status === 200, JSON.stringify(reLogin.json?.message ?? reLogin.status));
+  const dupReg = await req('POST', '/auth/register', { body: { fullName: 'Khách Trùng Số', phone: newPhone, password: '1234' } });
+  check('SĐT đã dùng bị chặn 409', dupReg.status === 409, JSON.stringify(dupReg.json?.message ?? dupReg.status));
+  const shortPw = await req('POST', '/auth/register', { body: { fullName: 'Khách Mật Khẩu Ngắn', phone: '09' + String(Date.now() + 1).slice(-8), password: '123' } });
+  check('mật khẩu 3 ký tự -> 422', shortPw.status === 422, JSON.stringify(shortPw.json?.errors ?? shortPw.json?.message ?? '').slice(0, 120));
   const nf = await req('GET', '/products/slug-khong-ton-tai');
   check('404 sản phẩm không tồn tại', nf.status === 404);
 

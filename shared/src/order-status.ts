@@ -67,3 +67,7 @@ export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
   PAID: 'Đã thanh toán',
   REFUNDED: 'Đã hoàn tiền',
 };
+
+/** Đơn chuyển khoản còn chờ tiền: bếp chưa thấy đơn, khách cần trả tiếp */
+export const isAwaitingPayment = (o: { status: string; paymentStatus: string; paymentMethod: string }) =>
+  o.status === 'PENDING' && o.paymentMethod === 'BANK_TRANSFER' && o.paymentStatus === 'UNPAID';

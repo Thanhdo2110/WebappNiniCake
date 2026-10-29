@@ -15,6 +15,7 @@
     "generate": "prisma generate",
     "seed": "tsx prisma/seed.ts",
     "test:smoke": "tsx scripts/smoke.http.mjs",
+    "payos:webhook": "tsx scripts/payos-webhook.ts",
     "check:api": "tsx scripts/smoke.http.mjs && tsx scripts/sweep-get.ts && tsx scripts/sweep-write.ts"
   },
   "prisma": {
@@ -22,6 +23,7 @@
   },
   "dependencies": {
     "@ninicakes/shared": "*",
+    "@payos/node": "^2.0.5",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.5.0",
@@ -34,6 +36,7 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "qrcode": "^1.5.4",
     "swagger-ui-express": "^5.0.1",
     "zod": "^3.23.8"
   },
@@ -46,6 +49,7 @@
     "@types/morgan": "^1.9.9",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.9.0",
+    "@types/qrcode": "^1.5.6",
     "@types/swagger-ui-express": "^4.1.7",
     "prisma": "^5.22.0",
     "tsx": "^4.19.2",

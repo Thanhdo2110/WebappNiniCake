@@ -1,6 +1,7 @@
 /** Tin nhắn liên hệ từ khách: xem, đánh dấu đã đọc, xuất danh sách email nhận tin */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Paperclip } from 'lucide-react';
 import type { Paginated, MessageDTO } from '@shared/types';
 import { get, patch, errMessage } from '../lib/api';
 import { downloadCsv } from '../lib/csv';
@@ -66,6 +67,11 @@ export default function MessagesPage() {
                     </td>
                     <td className="small" style={{ maxWidth: 360 }}>
                       <b style={{ fontWeight: m.isRead ? 600 : 800 }}>{m.subject || '(Không có chủ đề)'}</b>
+                      {m.imageUrl && (
+                        <span className="small muted" style={{ marginLeft: 6, fontWeight: 400 }} title="Khách đính kèm ảnh bánh">
+                          <Paperclip size={12} style={{ verticalAlign: -2 }} /> có ảnh
+                        </span>
+                      )}
                       <div className="muted" style={{ maxHeight: 36, overflow: 'hidden' }}>{m.content}</div>
                     </td>
                     <td>{m.isRead
@@ -96,6 +102,14 @@ export default function MessagesPage() {
               {viewing.name} • {viewing.email}{viewing.phone ? ` • ${viewing.phone}` : ''} • {formatDateTime(viewing.createdAt)}
             </p>
             <p style={{ whiteSpace: 'pre-wrap', background: 'var(--cream-2)', padding: 14, borderRadius: 10 }}>{viewing.content}</p>
+            {viewing.imageUrl && (
+              <figure style={{ margin: '0 0 14px' }}>
+                <figcaption className="small muted" style={{ marginBottom: 6 }}>Ảnh bánh khách đính kèm</figcaption>
+                <a href={viewing.imageUrl} target="_blank" rel="noreferrer">
+                  <img src={viewing.imageUrl} alt="Ảnh bánh khách gửi" style={{ maxWidth: '100%', borderRadius: 10, border: '1px solid var(--line-2)' }} />
+                </a>
+              </figure>
+            )}
             {!viewing.isRead && (
               <button className="btn btn-primary" disabled={readM.isPending} onClick={() => readM.mutate(viewing.id)}>
                 Đánh dấu đã đọc

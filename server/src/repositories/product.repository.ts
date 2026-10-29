@@ -161,7 +161,7 @@ export const productRepository = {
   },
   async syncVariants(
     productId: number,
-    variants: { id?: number; name: string; flavor?: string | null; price: number; stock: number; isActive: boolean }[]
+    variants: { id?: number; name: string; flavor?: string | null; price: number; isActive: boolean }[]
   ) {
     const existing = await prisma.productVariant.findMany({ where: { productId }, select: { id: true, sku: true } });
     const keepIds = variants.map((v) => v.id).filter((x): x is number => typeof x === 'number');
@@ -174,7 +174,6 @@ export const productRepository = {
         name: v.name,
         flavor: v.flavor || null,
         price: v.price,
-        stock: v.stock,
         isActive: v.isActive,
       };
       if (v.id) {

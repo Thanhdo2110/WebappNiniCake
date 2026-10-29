@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { envs } from '../config/env.js';
 
 export const bannerBodySchema = z.object({
   title: z.string().trim().min(2, 'Nhập tiêu đề banner').max(120),
@@ -36,12 +37,21 @@ export const settingsBodySchema = z.object({
   freeShippingMinVnd: z.number().int().min(0).max(100000000),
 });
 
+/* Ảnh đính kèm phải là tệp do chính hệ thống lưu, không phải URL tuỳ ý:
+   khách chỉ gửi về từ POST /uploads/attach. Tên tệp sinh ra dạng
+   "<timestamp>-<uuid8>.<ext>" nên không có dấu '/' — chặn luôn đường dẫn cha. */
+const contactImage =
+  envs.upload.driver === 'cloudinary'
+    ? z.string().trim().regex(/^https:\/\/res\.cloudinary\.com\//, 'Ảnh đính kèm không hợp lệ')
+    : z.string().trim().regex(/^\/uploads\/images\/[\w-]+(\.[\w-]+)?$/, 'Ảnh đính kèm không hợp lệ');
+
 export const contactSchema = z.object({
   name: z.string().trim().min(2, 'Vui lòng cho biết tên của bạn').max(80),
   email: z.string().trim().email('Email chưa đúng định dạng'),
   phone: z.string().trim().max(15).optional().or(z.literal('')),
   subject: z.string().trim().max(120).optional().or(z.literal('')),
   content: z.string().trim().min(10, 'Vui lòng mô tả chi tiết hơn').max(2000),
+  imageUrl: contactImage.max(500).optional().or(z.literal('')),
 });
 
 export const subscribeSchema = z.object({

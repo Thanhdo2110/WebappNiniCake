@@ -167,7 +167,7 @@ if (idOf(addr)) await probe('/addresses/' + idOf(addr), { token: CT, method: 'DE
 await probe('/wishlist/3', { token: CT, method: 'DELETE' }, [200, 201, 204, 404]);
 await probe('/wishlist/3', { token: CT });
 await probe('/newsletter', { body: { email: 'qa.' + Date.now() + '@example.com' } });
-await probe('/auth/forgot-password', { body: { email: 'vy.nguyen@example.com' } });
+await probe('/auth/forgot-password', { body: { phone: '0901332201' } });
 await probe('/orders', { token: CT, body: { deliveryType: 'DELIVERY', deliveryDate: '2026-12-01', timeSlot: '10:00 - 12:00', paymentMethod: 'COD' } }, [422]);
 
 const alive = await fetch(API + '/');

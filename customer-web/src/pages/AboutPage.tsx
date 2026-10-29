@@ -25,7 +25,7 @@ const VALUES = [
   {
     icon: Truck,
     title: 'Giao đúng khung giờ',
-    text: '6 khung giờ mỗi ngày, khu vực nội thành và phần khu vực lân cận. Bánh tới vẫn mát và kín gió.',
+    text: 'Đặt khung giờ theo từng giờ một, từ 8h đến 21h, khu vực nội thành và phần khu vực lân cận. Bánh tới vẫn mát và kín gió.',
   },
 ];
 

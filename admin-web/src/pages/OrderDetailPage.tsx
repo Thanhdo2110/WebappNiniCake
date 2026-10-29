@@ -5,12 +5,12 @@ import { useState } from 'react';
 import type { OrderDTO, StoreSettingsDTO } from '@shared/types';
 import {
   ORDER_STATUS_LABEL, DELIVERY_TYPE_LABEL, PAYMENT_METHOD_LABEL,
-  PAYMENT_STATUS_LABEL, canTransition,
+  canTransition,
 } from '@shared';
 import { formatVND, formatDateTime, formatDate } from '../lib/format';
 import { imageUrl } from '../lib/placeholder';
 import { get, patch, post, errMessage } from '../lib/api';
-import { Loading, PageTitle, ZoomImage } from '../components/ui';
+import { Loading, PageTitle, ZoomImage, PaymentPill } from '../components/ui';
 import { StatusTag } from '../components/bits';
 import { useToast } from '../hooks/toast';
 import { BadgeCheck, Ban, ChefHat, Clock, Flag, PackageCheck, Truck } from 'lucide-react';
@@ -253,7 +253,7 @@ export default function OrderDetailPage() {
             {o.user && (
               <div className="small muted" style={{ marginTop: 12 }}>
                 Tài khoản: <Link to={`/customers/${o.user.id}`} style={{ color: 'var(--champagne)' }}>{o.user.fullName}</Link>
-                <div>{o.user.email}{o.user.phone && ` • ${o.user.phone}`}</div>
+                <div>{[o.user.email, o.user.phone].filter(Boolean).join(' • ')}</div>
               </div>
             )}
           </div>
@@ -261,10 +261,10 @@ export default function OrderDetailPage() {
           <div className="card pad">
             <h3 style={{ fontSize: 15, marginBottom: 8 }}>Thanh toán</h3>
             <div className="small mb-8">{PAYMENT_METHOD_LABEL[o.paymentMethod]}</div>
-            <div className="flex gap-8 mb-8" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="small">{PAYMENT_STATUS_LABEL[o.paymentStatus]}</span>
+            <div className="flex gap-8 mb-8" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <PaymentPill status={o.paymentStatus} />
               {o.paymentStatus !== 'PAID' && o.paymentMethod !== 'COD' && (
-                <button className="btn btn-outline btn-sm" onClick={() => payM.mutate('PAID')} disabled={payM.isPending}>Xác nhận đã nhận tiền</button>
+                <button className="btn btn-primary btn-sm" onClick={() => payM.mutate('PAID')} disabled={payM.isPending}>Xác nhận đã nhận tiền</button>
               )}
               {o.paymentStatus === 'PAID' && o.paymentMethod !== 'COD' && (
                 <button className="btn btn-outline btn-sm" onClick={() => payM.mutate('REFUNDED')} disabled={payM.isPending}>Ghi nhận hoàn tiền</button>

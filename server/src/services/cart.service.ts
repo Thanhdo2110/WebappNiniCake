@@ -3,7 +3,7 @@ import { prisma } from '../config/prisma.js';
 import { cartRepository as repo } from '../repositories/cart.repository.js';
 import { authCookieToken } from './helpers.js';
 import { fail } from '../utils/http.js';
-import { DELIVERY_TIME_SLOTS } from '@ninicakes/shared';
+import { DELIVERY_TIME_SLOTS, MAX_CART_QUANTITY } from '@ninicakes/shared';
 
 function normalizeOptions(options?: {
   messageOnCake?: string;
@@ -66,7 +66,6 @@ export const cartService = {
     if (!variant || !variant.isActive || !variant.product.isActive || variant.product.deletedAt) {
       throw fail('Bánh này hiện không còn được bán. Vui lòng chọn mẫu khác.', 404);
     }
-    const existingStock = variant.stock;
     const options = normalizeOptions(input.options as never);
     const optKey = options ? JSON.stringify(options) : '';
 
@@ -76,12 +75,10 @@ export const cartService = {
     if (item && (item.options ? JSON.stringify(item.options) : '') !== optKey) item = null;
 
     if (item) {
-      const newQty = Math.min(item.quantity + input.quantity, 20, Math.max(1, existingStock));
-      if (newQty > existingStock) throw fail('Chỉ còn ' + existingStock + ' phần của bánh này trong bếp.', 409);
+      const newQty = Math.min(item.quantity + input.quantity, MAX_CART_QUANTITY);
       await repo.updateItem(item.id, { quantity: newQty, unitPrice: variant.price });
     } else {
-      if (input.quantity > existingStock) throw fail('Chỉ còn ' + existingStock + ' phần của bánh này trong bếp.', 409);
-      await repo.createItem(cart.id, input.variantId, input.quantity, variant.price, options);
+      await repo.createItem(cart.id, input.variantId, Math.min(input.quantity, MAX_CART_QUANTITY), variant.price, options);
     }
     return await this.getCartSafe(cart.id);
   },
@@ -91,8 +88,6 @@ export const cartService = {
     const cart = await repo.ensureFor(req.auth?.id ?? null, req.cartToken || authCookieToken(req) || '');
     const item = await repo.getItem(cart.id, itemId);
     if (!item) throw fail('Không tìm thấy bánh trong giỏ.', 404);
-    const stock = item.variant.stock;
-    if (quantity > stock) throw fail('Chỉ còn ' + stock + ' phần của bánh này trong bếp.', 409);
     await repo.updateItem(itemId, { quantity, unitPrice: item.variant.price });
     return await this.getCartSafe(cart.id);
   },
@@ -123,7 +118,7 @@ export const cartService = {
 
 /** Hỗ trợ summary từ raw rows */
 function cartSummaryFromRows(
-  rows: { id: number; cartId: number; variantId: number; quantity: number; unitPrice: number; options: unknown; variant: { id: number; name: string; flavor: string | null; price: number; stock: number; isActive: boolean; product: { id: number; name: string; isActive: boolean; deletedAt: Date | null } } }[],
+  rows: { id: number; cartId: number; variantId: number; quantity: number; unitPrice: number; options: unknown; variant: { id: number; name: string; flavor: string | null; price: number; isActive: boolean; product: { id: number; name: string; slug: string; isActive: boolean; deletedAt: Date | null } } }[],
   imageMap: Map<number, string | null>
 ) {
   const usable = rows.filter((r) => r.variant && r.variant.product && r.variant.product.isActive && !r.variant.product.deletedAt && r.variant.isActive);
@@ -132,12 +127,12 @@ function cartSummaryFromRows(
     variantId: r.variantId,
     productId: r.variant.product.id,
     productName: r.variant.product.name,
+    productSlug: r.variant.product.slug ?? null,
     variantName: r.variant.name,
     imageUrl: imageMap.get(r.variant.product.id) ?? null,
     unitPrice: r.unitPrice,
     quantity: r.quantity,
     lineTotal: r.unitPrice * r.quantity,
-    stock: r.variant.stock,
     options: (r.options as { messageOnCake?: string; notes?: string; referenceImageUrl?: string | null }) ?? null,
   }));
   return { items, subtotal: items.reduce((s, i) => s + i.lineTotal, 0) } as { items: unknown[]; subtotal: number };

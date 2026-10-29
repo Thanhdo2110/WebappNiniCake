@@ -1,5 +1,6 @@
 /* ===== Nini Cakes · Motion layer =====
-   Toàn bộ chuyển động của storefront: reveal, 3D, nút, ambient, marquee. */
+   Toàn bộ chuyển động của storefront: reveal, 3D, nút, ambient, marquee.
+   Nhịp chậm và mềm hơn để giữ cảm giác lịch sự, thư thái. */
 
 @keyframes nini-rise {
   from { opacity: 0; transform: translate3d(0, 26px, 0); }
@@ -59,8 +60,12 @@
   to { transform: rotate(360deg); }
 }
 @keyframes nini-ring {
-  0% { box-shadow: 0 0 0 0 rgba(194, 160, 106, 0.5); }
-  100% { box-shadow: 0 0 0 18px rgba(194, 160, 106, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(185, 146, 95, 0.5); }
+  100% { box-shadow: 0 0 0 18px rgba(185, 146, 95, 0); }
+}
+@keyframes nini-glow {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.06); }
 }
 
 /* ---------- 1. Reveals khi cuộn ---------- */
@@ -84,7 +89,10 @@
 .reveal--blur.in-view { filter: blur(0); }
 
 /* Lưới sản phẩm / danh sách: tự stagger theo thứ tự DOM */
-.stagger > * { opacity: 0; transform: translate3d(0, 22px, 0); transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out); }
+.stagger > * {
+  opacity: 0; transform: translate3d(0, 22px, 0);
+  transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out);
+}
 .stagger.in-view > * { opacity: 1; transform: none; }
 .stagger.in-view > *:nth-child(1) { transition-delay: 0ms; }
 .stagger.in-view > *:nth-child(2) { transition-delay: 70ms; }
@@ -110,7 +118,7 @@
 .tilt-glare {
   position: absolute; inset: 0; z-index: 3; pointer-events: none;
   opacity: 0; transition: opacity var(--dur-2) var(--ease-out);
-  background: radial-gradient(340px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.6), transparent 62%);
+  background: radial-gradient(340px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.56), transparent 62%);
 }
 .tilt-host:hover .tilt-glare,
 .tilt-host:focus-within .tilt-glare { opacity: 1; }
@@ -132,7 +140,7 @@
   content: ''; position: absolute; top: -20%; bottom: -20%; left: 0; width: 42%;
   z-index: -1; background: var(--sheen); opacity: 0; pointer-events: none;
 }
-.btn:hover::before, .btn:focus-visible::before { opacity: 1; animation: nini-sheen 900ms var(--ease-out); }
+.btn:hover::before, .btn:focus-visible::before { opacity: 1; animation: nini-sheen 950ms var(--ease-out); }
 .btn:hover { transform: translate3d(0, -2px, 0); }
 .btn:active { transform: translate3d(0, 1px, 0) scale(0.975); transition-duration: 70ms; }
 .btn .btn-ico { display: inline-block; transition: transform var(--dur-2) var(--ease-spring); }
@@ -141,15 +149,15 @@
 .btn:disabled::before { display: none; }
 .btn-ripple {
   position: absolute; z-index: 0; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.18) 60%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.18) 60%, transparent 70%);
   animation: nini-ripple 620ms var(--ease-out) forwards;
 }
 
 /* ---------- 4. Lớp môi trường: blobs, hạt vàng, giấy ---------- */
 .ambient { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
 .blob {
-  position: absolute; border-radius: 50%; filter: blur(46px); opacity: 0.55;
-  animation: nini-drift var(--dur-blob, 18s) var(--ease-in-out) infinite;
+  position: absolute; border-radius: 50%; filter: blur(46px); opacity: 0.5;
+  animation: nini-drift var(--dur-blob, 20s) var(--ease-in-out) infinite;
 }
 .petals { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .petal {
@@ -160,22 +168,23 @@
 }
 @keyframes nini-fall {
   0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 0; }
-  10% { opacity: 0.6; }
+  10% { opacity: 0.55; }
   100% { transform: translate3d(var(--sway, 40px), 112vh, 0) rotate(520deg); opacity: 0; }
 }
 .grain::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
-  background-image: var(--grain); opacity: 0.14; mix-blend-mode: multiply;
+  background-image: var(--grain); opacity: 0.1; mix-blend-mode: multiply;
 }
 .pattern-asanoha { background-image: var(--pattern-asanoha); }
 .pattern-seigaiha { background-image: var(--pattern-seigaiha); }
+.pattern-dots { background-image: var(--pattern-dots); }
 
 /* ---------- 5. Chữ dát vàng ---------- */
 .foil-text {
   background: var(--foil-text) 0 0 / 220% 100%;
   -webkit-background-clip: text; background-clip: text;
   color: transparent; -webkit-text-fill-color: transparent;
-  animation: nini-foil 7s var(--ease-in-out) infinite alternate;
+  animation: nini-foil 8s var(--ease-in-out) infinite alternate;
 }
 .rule-gold {
   height: 1px; border: 0;
@@ -183,10 +192,7 @@
 }
 
 /* ---------- 6. Menu bật ra, badge nảy, toast ---------- */
-.drop {
-  transform-origin: top center;
-  animation: nini-drop var(--dur-2) var(--ease-out) both;
-}
+.drop { transform-origin: top center; animation: nini-drop var(--dur-2) var(--ease-out) both; }
 .pop { animation: nini-pop var(--dur-2) var(--ease-spring); }
 .toast--leave { animation: nini-fade var(--dur-1) var(--ease-out) reverse both; }
 
@@ -204,7 +210,9 @@
 .plus-minus.is-open { transform: rotate(45deg); }
 
 /* ---------- 8. Chuyển trang ---------- */
-.page { animation: nini-rise var(--dur-3) var(--ease-out) both; }
+/* fill-mode không được là `both`: transform còn lại sẽ biến .page thành
+   containing block của phần tử position:fixed bên trong (mobile buy bar, overlay) */
+.page { animation: nini-rise var(--dur-3) var(--ease-out) backwards; }
 
 /* ---------- 9. thanh tiến trình & nút lên đầu ---------- */
 .progress-top {
@@ -214,7 +222,11 @@
 }
 .to-top { animation: nini-pop var(--dur-2) var(--ease-spring); }
 
-/* ---------- 10. Giảm chuyển động ---------- */
+/* ---------- 10. Nhịp thở mềm cho các lớp trang trí ---------- */
+.soft-float { animation: nini-float 9s var(--ease-in-out) infinite; }
+.soft-glow { animation: nini-glow 7s var(--ease-in-out) infinite; }
+
+/* ---------- 11. Giảm chuyển động ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 1ms !important;

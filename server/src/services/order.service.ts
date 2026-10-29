@@ -4,7 +4,13 @@ import { couponRepository } from '../repositories/coupon.repository.js';
 import { contentRepository } from '../repositories/content.repository.js';
 import { prisma } from '../config/prisma.js';
 import { evalCoupon, computeTotals, shippingFeeFor } from '../utils/totals.js';
-import { canTransition, DELIVERY_TIME_SLOTS, LOW_STOCK_THRESHOLD } from '@ninicakes/shared';
+import {
+  canTransition,
+  DELIVERY_TIME_SLOTS,
+  slotUnavailableReason,
+  vnTodayISO,
+  vnTodayStart,
+} from '@ninicakes/shared';
 import { fail } from '../utils/http.js';
 import { buildMeta } from '../utils/pagination.js';
 import { orderToDTO } from '../utils/dto.js';
@@ -34,10 +40,7 @@ interface CheckoutInput {
 }
 
 function computeOrderCode(now: Date, seq: number): string {
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `NC${y}${m}${day}${String(seq).padStart(3, '0')}`;
+  return `NC${vnTodayISO(now).replace(/-/g, '')}${String(seq).padStart(3, '0')}`;
 }
 
 export const orderService = {
@@ -78,9 +81,6 @@ export const orderService = {
       const variant = variantMap.get(item.variantId);
       if (!variant || !variant.isActive || !variant.product.isActive || variant.product.deletedAt) {
         throw fail(`“Bánh” trong giỏ của quý khách hiện không còn bán. Vui lòng xem lại giỏ hàng.`, 409);
-      }
-      if (item.quantity > variant.stock) {
-        throw fail(`“${variant.product.name}” chỉ còn ${variant.stock} phần. Vui lòng điều chỉnh số lượng.`, 409);
       }
       lines.push({
         variantId: variant.id,
@@ -151,17 +151,14 @@ export const orderService = {
     const shippingFee = shippingFeeFor(subtotal, settings.shippingFeeVnd, settings.freeShippingMinVnd, input.deliveryType);
     const totals = computeTotals(lines.map((l) => ({ price: l.price, quantity: l.quantity })), { discount, shippingFee });
 
-    // Thời gian giao
-    const when = new Date(`${input.deliveryDate}T00:00:00+07:00`);
-    if (Number.isNaN(when.getTime())) throw fail('Ngày nhận/giao chưa hợp lệ.', 400);
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    if (when.getTime() < todayStart.getTime()) {
-      throw fail('Không thể chọn ngày trong quá khứ. Kính mời quý khách chọn ngày khác.', 400);
-    }
+    // Thời gian giao — server chạy UTC nên phải so theo giờ Việt Nam
     if (!(DELIVERY_TIME_SLOTS as readonly string[]).includes(input.timeSlot)) {
       throw fail('Khung giờ nhận hàng chưa hợp lệ.', 400);
     }
+    const slotErr = slotUnavailableReason(input.deliveryDate, input.timeSlot);
+    if (slotErr) throw fail(slotErr, 400);
+    const when = new Date(`${input.deliveryDate}T00:00:00+07:00`);
+    const todayStart = new Date(vnTodayStart());
 
     const now = new Date();
     const results = await prisma.$transaction(async (tx) => {
@@ -212,13 +209,6 @@ export const orderService = {
       if (!order) throw fail('Không tạo được đơn hàng, vui lòng thử lại.', 500);
 
       for (const l of lines) {
-        // CAS bảo đảm không âm tồn kho
-        const upd = await repo.decrementStockTx(tx, l.variantId, l.quantity);
-        if (upd.count === 0) {
-          const sufficient = await tx.productVariant.findUnique({ where: { id: l.variantId }, select: { name: true, product: { select: { name: true } } } });
-          const label = sufficient?.product?.name || sufficient?.name || 'Bánh';
-          throw fail(`“${label}” vừa hết chỗ. Vui lòng điều chỉnh giỏ hàng.`, 409);
-        }
         await repo.createOrderItem(tx, {
           orderId: order.id,
           productId: l.productId,
@@ -241,8 +231,9 @@ export const orderService = {
       if (couponId) {
         await couponRepository.incrementUsedTx(tx, couponId);
       }
-      // Dọn giỏ
-      if (cart) await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+      /* Đơn chuyển khoản: GIỮ LẠI giỏ — khách còn quay lui kiểm tra hoặc trả sau.
+         Giỏ chỉ dọn khi tiền thực sự về (markPaid / admin xác nhận). */
+      if (cart && input.paymentMethod === 'COD') await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
       return order;
     });
 
@@ -280,6 +271,7 @@ export const orderService = {
       deliveryDate: params.deliveryDate as string | undefined,
       from: params.from as string | undefined,
       to: params.to as string | undefined,
+      paymentStatus: params.paymentStatus as string | undefined,
     });
     return { items: items.map(orderToDTO), meta: buildMeta(total, Number(params.page) || 1, Number(params.perPage) || 12) };
   },
@@ -335,11 +327,6 @@ export const orderService = {
       throw fail('Đơn hiện ở trạng thái không thể hủy.');
     }
     await prisma.$transaction(async (tx) => {
-      // Hoàn stock theo các món chưa xuất kho (PENDING..SHIPPED đều coi chưa giao)
-      await repo.incrementStockTx(
-        tx,
-        o.items.map((i) => ({ variantId: i.variantId ?? 0, quantity: i.quantity })).filter((x) => x.variantId)
-      );
       await tx.order.update({
         where: { id: orderId },
         data: {
@@ -358,6 +345,14 @@ export const orderService = {
       if (o.couponId) await couponRepository.decrementUsedTx(tx, o.couponId);
     });
     return this.adminGet(orderId);
+  },
+
+  /** Tiền về thật rồi mới dọn giỏ của khách. */
+  async clearCartForOrder(orderId: number) {
+    const o = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true } });
+    if (!o?.userId) return;
+    const cart = await cartRepository.findByUser(o.userId);
+    if (cart?.items.length) await cartRepository.clear(cart.id);
   },
 
   async setPayment(adminId: number, orderId: number, status: 'UNPAID' | 'PAID' | 'REFUNDED', reference?: string) {
@@ -381,15 +376,7 @@ export const orderService = {
         changedById: adminId,
       });
     });
+    if (status === 'PAID') await this.clearCartForOrder(orderId);
     return this.adminGet(orderId);
-  },
-
-  lowStock(threshold = LOW_STOCK_THRESHOLD) {
-    return prisma.productVariant.findMany({
-      where: { stock: { lte: threshold }, isActive: true, product: { isActive: true, deletedAt: null } },
-      orderBy: { stock: 'asc' },
-      take: 12,
-      include: { product: { select: { name: true } } },
-    });
   },
 };

@@ -6,23 +6,25 @@ import type { OrderDTO, Paginated } from '@shared/types';
 import { ORDER_STATUS_LABEL, ORDER_STATUS_COLOR, DELIVERY_TYPE_LABEL } from '@shared';
 import { get } from '../lib/api';
 import { formatVND, formatDateTime, formatDate } from '../lib/format';
-import { Loading, PageTitle, Empty, Pager } from '../components/ui';
+import { Loading, PageTitle, Empty, Pager, PaymentPill } from '../components/ui';
 
 const STATUSES = ['', 'PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'SHIPPED', 'COMPLETED', 'CANCELLED'];
 
 export default function OrdersPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [pay, setPay] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [page, setPage] = useState(1);
 
   const query = useQuery({
-    queryKey: ['admin-orders', { search, status, from, to, page }],
+    queryKey: ['admin-orders', { search, status, pay, from, to, page }],
     queryFn: () => {
       const params: Record<string, unknown> = { page, perPage: 12 };
       if (search.trim()) params.search = search.trim();
       if (status) params.status = status;
+      if (pay) params.paymentStatus = pay;
       if (from) params.from = from;
       if (to) params.to = to;
       return get<Paginated<OrderDTO>>('/admin/orders', params);
@@ -41,12 +43,20 @@ export default function OrdersPage() {
         <select className="select" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
           {STATUSES.map((s) => <option key={s} value={s}>{s === '' ? 'Tất cả trạng thái' : ORDER_STATUS_LABEL[s as keyof typeof ORDER_STATUS_LABEL]}</option>)}
         </select>
+        <select className="select" value={pay} onChange={(e) => { setPay(e.target.value); setPage(1); }}>
+          <option value="">Mọi trạng thái tiền</option>
+          <option value="UNPAID">Chưa thanh toán</option>
+          <option value="PAID">Đã thanh toán</option>
+          <option value="REFUNDED">Đã hoàn tiền</option>
+        </select>
         <label className="check-row small">Từ <input type="date" className="input" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} /></label>
         <label className="check-row small">Đến <input type="date" className="input" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} /></label>
       </div>
 
       {query.isLoading ? <Loading text="Đang lấy sổ đơn..." /> : items.length === 0 ? (
-        <Empty title="Không có đơn nào khớp bộ lọc" />
+        <Empty title="Không có đơn nào khớp bộ lọc">
+          {!pay && <p className="small muted">Đơn chuyển khoản còn chờ tiền được ẩn khỏi danh sách — chọn “Chưa thanh toán” để xem.</p>}
+        </Empty>
       ) : (
         <>
           <div className="card table-wrap">
@@ -72,7 +82,10 @@ export default function OrdersPage() {
                       <div className="small muted">{formatDate(o.deliveryDate)} • {o.timeSlot}</div>
                     </td>
                     <td><span className="tag" style={{ background: `${ORDER_STATUS_COLOR[o.status]}22`, color: ORDER_STATUS_COLOR[o.status], fontWeight: 700 }}>{ORDER_STATUS_LABEL[o.status]}</span></td>
-                    <td className="small">{o.paymentMethod === 'COD' ? 'COD' : 'Chuyển khoản'}<div className="small muted">{o.paymentStatus}</div></td>
+                    <td className="small">
+                      {o.paymentMethod === 'COD' ? 'COD' : 'Chuyển khoản'}
+                      <div style={{ marginTop: 5 }}><PaymentPill status={o.paymentStatus} /></div>
+                    </td>
                     <td className="right" style={{ fontWeight: 700 }}>{formatVND(o.total)}</td>
                     <td><Link className="btn btn-outline btn-sm" to={`/orders/${o.id}`}>Xử lý</Link></td>
                   </tr>

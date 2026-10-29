@@ -52,7 +52,7 @@ erDiagram
     varchar email "UQ"
     varchar passwordHash
     varchar fullName
-    varchar phone
+    varchar phone "UQ"
     varchar avatarUrl
     int roleId
     userstatus status "def"
@@ -77,6 +77,9 @@ erDiagram
     varchar ward
     varchar district
     varchar city
+    float lat
+    float lng
+    varchar mapsUrl
     boolean isDefault "def"
     datetime createdAt "def"
     datetime updatedAt
@@ -189,6 +192,9 @@ erDiagram
     varchar ward
     varchar district
     varchar city
+    float lat
+    float lng
+    varchar mapsUrl
     varchar note
     int subtotal
     int discount "def"
@@ -232,6 +238,7 @@ erDiagram
     paymentstatustype status "def"
     int amount
     varchar reference
+    json providerMeta
     datetime paidAt
     datetime createdAt "def"
     datetime updatedAt
@@ -325,6 +332,7 @@ erDiagram
     varchar phone
     varchar subject
     varchar content
+    varchar imageUrl
     boolean isRead "def"
     datetime createdAt "def"
   }

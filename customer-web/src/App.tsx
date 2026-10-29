@@ -1,10 +1,11 @@
 /** Định tuyến storefront Nini Cakes: khung shell, chuyển trang, tiến trình cuộn */
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ScrollToTop } from './hooks/scroll';
 import { useReducedMotion, useScrolled, useScrollProgress } from './hooks/motion';
 import { mountRipple } from './lib/ripple';
@@ -12,27 +13,30 @@ import { useAuth } from './hooks/auth';
 import { LoadingBlock } from './components/ui';
 
 import HomePage from './pages/HomePage';
-import ProductsPage from './pages/ProductsPage';
-import ProductDetailPage from './pages/ProductDetailPage';
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
-import FaqPage from './pages/FaqPage';
-import PoliciesPage from './pages/PoliciesPage';
-import PostDetailPage from './pages/PostDetailPage';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
-import ResetPasswordPage from './pages/auth/ResetPasswordPage';
-import AccountLayout from './pages/account/AccountLayout';
-import ProfilePage from './pages/account/ProfilePage';
-import AddressesPage from './pages/account/AddressesPage';
-import OrdersPage from './pages/account/OrdersPage';
-import OrderDetailPage from './pages/account/OrderDetailPage';
-import WishlistPage from './pages/account/WishlistPage';
-import MyReviewsPage from './pages/account/MyReviewsPage';
-import NotFoundPage from './pages/NotFoundPage';
+
+/* Tách bundle theo tuyến: khách vào trang chủ không phải tải code tài khoản/checkout */
+const ProductsPage = lazy(() => import('./pages/ProductsPage'));
+const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'));
+const CartPage = lazy(() => import('./pages/CartPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const PaymentPage = lazy(() => import('./pages/PaymentPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const FaqPage = lazy(() => import('./pages/FaqPage'));
+const PoliciesPage = lazy(() => import('./pages/PoliciesPage'));
+const PostDetailPage = lazy(() => import('./pages/PostDetailPage'));
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
+const AccountLayout = lazy(() => import('./pages/account/AccountLayout'));
+const ProfilePage = lazy(() => import('./pages/account/ProfilePage'));
+const AddressesPage = lazy(() => import('./pages/account/AddressesPage'));
+const OrdersPage = lazy(() => import('./pages/account/OrdersPage'));
+const OrderDetailPage = lazy(() => import('./pages/account/OrderDetailPage'));
+const WishlistPage = lazy(() => import('./pages/account/WishlistPage'));
+const MyReviewsPage = lazy(() => import('./pages/account/MyReviewsPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { logged, ready } = useAuth();
@@ -67,6 +71,7 @@ export default function App() {
 
   return (
     <div className="site-shell">
+      <a className="skip-link" href="#site-content">Bỏ qua menu, tới nội dung chính</a>
       <div className="site-bg grain" aria-hidden>
         <span className="site-bg__wash site-bg__wash--a" />
         <span className="site-bg__wash site-bg__wash--b" />
@@ -75,36 +80,41 @@ export default function App() {
       <ScrollToTop />
       <ScrollCue />
       <Header />
-      <main className="site-main" key={location.pathname}>
+      <main className="site-main" id="site-content" key={location.pathname}>
         <div className="page">
-          <Routes location={location}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/banh" element={<ProductsPage />} />
-            <Route path="/san-pham/:slug" element={<ProductDetailPage />} />
-            <Route path="/gio-hang" element={<CartPage />} />
-            <Route path="/thanh-toan" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingBlock text="Đang chuẩn bị..." />}>
+              <Routes location={location}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/banh" element={<ProductsPage />} />
+                <Route path="/san-pham/:slug" element={<ProductDetailPage />} />
+                <Route path="/gio-hang" element={<CartPage />} />
+                <Route path="/thanh-toan" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
+                <Route path="/thanh-toan/:id" element={<RequireAuth><PaymentPage /></RequireAuth>} />
 
-            <Route path="/dang-nhap" element={<LoginPage />} />
-            <Route path="/dang-ky" element={<RegisterPage />} />
-            <Route path="/quen-mat-khau" element={<ForgotPasswordPage />} />
-            <Route path="/dat-lai-mat-khau" element={<ResetPasswordPage />} />
+                <Route path="/dang-nhap" element={<LoginPage />} />
+                <Route path="/dang-ky" element={<RegisterPage />} />
+                <Route path="/quen-mat-khau" element={<ForgotPasswordPage />} />
+                <Route path="/dat-lai-mat-khau" element={<ResetPasswordPage />} />
 
-            <Route path="/tai-khoan" element={<RequireAuth><AccountLayout /></RequireAuth>}>
-              <Route index element={<ProfilePage />} />
-              <Route path="dia-chi" element={<AddressesPage />} />
-              <Route path="don-hang" element={<OrdersPage />} />
-              <Route path="don-hang/:id" element={<OrderDetailPage />} />
-              <Route path="yeu-thich" element={<WishlistPage />} />
-              <Route path="danh-gia" element={<MyReviewsPage />} />
-            </Route>
+                <Route path="/tai-khoan" element={<RequireAuth><AccountLayout /></RequireAuth>}>
+                  <Route index element={<ProfilePage />} />
+                  <Route path="dia-chi" element={<AddressesPage />} />
+                  <Route path="don-hang" element={<OrdersPage />} />
+                  <Route path="don-hang/:id" element={<OrderDetailPage />} />
+                  <Route path="yeu-thich" element={<WishlistPage />} />
+                  <Route path="danh-gia" element={<MyReviewsPage />} />
+                </Route>
 
-            <Route path="/ve-nini" element={<AboutPage />} />
-            <Route path="/lien-he" element={<ContactPage />} />
-            <Route path="/chinh-sach" element={<PoliciesPage />} />
-            <Route path="/cau-hoi" element={<FaqPage />} />
-            <Route path="/bai-viet/:slug" element={<PostDetailPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+                <Route path="/ve-nini" element={<AboutPage />} />
+                <Route path="/lien-he" element={<ContactPage />} />
+                <Route path="/chinh-sach" element={<PoliciesPage />} />
+                <Route path="/cau-hoi" element={<FaqPage />} />
+                <Route path="/bai-viet/:slug" element={<PostDetailPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </main>
       <Footer />

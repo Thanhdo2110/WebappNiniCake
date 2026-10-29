@@ -58,12 +58,10 @@ export const productService = {
     const p = await repo.getBySlug(slug, { onlyActive: true });
     if (!p) throw fail('Không tìm thấy bánh phù hợp.', 404);
     const detail = productToDetailDTO(p as never);
-    const totals = await prismaAggForStock(p);
     const related = (await repo.relatedProducts(p.id, p.categoryId)).map((rp) => productToListDTO(rp as never));
     const reviews = await reviewRepository.listByProduct(p.id, 1, 5);
     return {
       product: detail,
-      totalStock: totals,
       related,
       reviews: {
         items: reviews.items.map(reviewToDTO),
@@ -105,26 +103,14 @@ export const productService = {
       sort: query.sort || 'newest',
       includeInactive: true,
     });
-    const rows = await Promise.all(
-      items.map(async (p) => {
-        const base = productToListDTO(p as never);
-        const stockAgg = await prisma.productVariant.aggregate({
-          where: { productId: p.id, isActive: true },
-          _sum: { stock: true },
-        });
-        return { ...base, totalStock: stockAgg._sum.stock || 0 };
-      })
-    );
+    const rows = items.map((p) => productToListDTO(p as never));
     return { items: rows, meta: buildMeta(total, query.page, query.perPage) };
   },
 
   async adminGet(id: number) {
     const p = await repo.getById(id);
     if (!p) throw fail('Không tìm thấy sản phẩm.', 404);
-    return {
-      ...productToDetailDTO(p as never),
-      totalStock: p.variants.reduce((s, v) => s + (v.isActive ? v.stock : 0), 0),
-    };
+    return productToDetailDTO(p as never);
   },
 
   async create(body: ProductBody) {
@@ -187,7 +173,6 @@ export const productService = {
         name: v.name,
         flavor: v.flavor || null,
         price: v.price,
-        stock: v.stock,
         isActive: v.isActive,
       }))
     );
@@ -214,25 +199,4 @@ export const productService = {
     await repo.updateProduct(id, { isActive });
     return { id, isActive };
   },
-
-  async lowStockList(threshold: number, take = 15) {
-    return prismaVariantLowStock(threshold, take);
-  },
 };
-
-async function prismaAggForStock(p: { id: number }) {
-  const agg = await prisma.productVariant.aggregate({
-    where: { productId: p.id, isActive: true },
-    _sum: { stock: true },
-  });
-  return agg._sum.stock || 0;
-}
-
-async function prismaVariantLowStock(threshold: number, take: number) {
-  return prisma.productVariant.findMany({
-    where: { stock: { lte: threshold }, isActive: true, product: { isActive: true, deletedAt: null } },
-    take,
-    orderBy: { stock: 'asc' },
-    include: { product: { select: { name: true } } },
-  });
-}

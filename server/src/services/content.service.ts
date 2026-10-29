@@ -98,13 +98,14 @@ export const contentService = {
   },
 
   /* ---- Liên hệ / nhận tin ---- */
-  async contact(input: { name: string; email: string; phone?: string; subject?: string; content: string }) {
+  async contact(input: { name: string; email: string; phone?: string; subject?: string; content: string; imageUrl?: string }) {
     return repo.createMessage({
       name: input.name,
       email: input.email,
       phone: input.phone || null,
       subject: input.subject || null,
       content: input.content,
+      imageUrl: input.imageUrl || null,
     });
   },
   async subscribe(email: string) {

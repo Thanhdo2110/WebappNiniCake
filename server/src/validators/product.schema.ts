@@ -6,7 +6,6 @@ export const variantInput = z.object({
   name: z.string().trim().min(1, 'Nhập tên kích cỡ/biến thể').max(80),
   flavor: z.string().trim().max(80).optional().or(z.literal('')),
   price: moneyInt,
-  stock: z.number().int().min(0).max(10000).default(0),
   isActive: z.boolean().optional().default(true),
 });
 
