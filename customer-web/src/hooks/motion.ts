@@ -33,7 +33,7 @@ export function useInView<T extends HTMLElement>(rootMargin = '0px 0px -12% 0px'
         for (const entry of entries) {
           if (entry.isIntersecting) {
             setInView(true);
-            if (once) io.unobserve(entry.target);
+            if (once) { io.unobserve(entry.target); stopNet(); }
           } else if (!once) {
             setInView(false);
           }
@@ -41,8 +41,25 @@ export function useInView<T extends HTMLElement>(rootMargin = '0px 0px -12% 0px'
       },
       { rootMargin, threshold: 0.1 },
     );
+    /* Nội dung không được phép vô hình vĩnh viễn chỉ vì observer không báo về —
+       .reveal/.stagger khởi đầu ở opacity:0, nên IntersectionObserver hỏng trên
+       WebView cũ hay chế độ tiết kiệm pin là mất cả khu sản phẩm. Bám theo cuộn
+       và tự hiện khi phần tử thực sự nằm trong khung nhìn. */
+    const stopNet = () => {
+      window.clearInterval(poll);
+      window.removeEventListener('scroll', onScroll);
+    };
+    const onScroll = () => {
+      const r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight && r.bottom > 0) {
+        setInView(true);
+        if (once) stopNet();
+      }
+    };
+    const poll = window.setInterval(onScroll, 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
     io.observe(el);
-    return () => io.disconnect();
+    return () => { io.disconnect(); stopNet(); };
   }, [rootMargin, once]);
 
   return { ref, inView };

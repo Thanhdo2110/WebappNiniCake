@@ -1,7 +1,12 @@
 /* Vẽ minh họa SVG cho từng sản phẩm khi seed — để storefront không dùng ảnh tạm.
-   Sản phẩm ghi ra server/uploads/images/products/ và đường dẫn DB lưu là /uploads/images/products/<slug>-<góc>.svg */
+   Sản phẩm ghi ra <UPLOAD_DIR>/images/products/ và đường dẫn DB lưu là /uploads/images/products/<slug>-<góc>.svg */
 import fs from 'node:fs';
 import path from 'node:path';
+
+/* Phải trùng uploadService.staticDir(). Trong container cwd=/app/server nhưng
+   UPLOAD_DIR=/app/uploads (volume) — hard-code 'uploads' theo cwd sẽ ghi ra chỗ
+   API không phục vụ, ảnh seed 404 trên VPS dù trên máy dev vẫn đúng. */
+const uploadRoot = () => path.resolve(process.cwd(), process.env.UPLOAD_DIR || 'uploads');
 
 type Palette = { base: string; cream: string; accent: string; garnish: string; bg: string };
 
@@ -241,7 +246,7 @@ export function writeProductArtwork(slug: string, name: string, flavor: string, 
     { key: 'top', body: (id: string) => topView(p, id, formKind) },
     { key: 'slice', body: (id: string) => sliceView(p, id, formKind) },
   ];
-  const dir = path.resolve(process.cwd(), 'uploads', 'images', 'products');
+  const dir = path.resolve(uploadRoot(), 'images', 'products');
   fs.mkdirSync(dir, { recursive: true });
   return views.map((v) => {
     const id = v.key + seed;
@@ -282,7 +287,7 @@ export function writeBannerArtwork(key: string, tone: 'sakura' | 'cacao'): strin
     <path d="M120 340 h150" stroke="${p.cream}" stroke-width="1" opacity=".6"/>
   </g>
 </svg>`;
-  const dir = path.resolve(process.cwd(), 'uploads', 'images', 'banners');
+  const dir = path.resolve(uploadRoot(), 'images', 'banners');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, `${key}.svg`), svg, 'utf8');
   return `/uploads/images/banners/${key}.svg`;

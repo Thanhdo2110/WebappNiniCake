@@ -1,24 +1,23 @@
 # ============ Caddy: HTTPS tu dong (Let's Encrypt) ============
-# DOI 3 TEN MIEN duoi day thanh ten mien that cua tiem truoc khi chay.
-# Caddy tu xin va tu gia han chung chi, khong can certbot.
-# DIEU KIEN: DNS da tro ve IP VPS thi moi xin duoc cert.
+# Caddy tu xin + tu gia han chung chi. Dieu kiEN: 2 ten mien duoi day
+# da tro A record ve IP VPS, va cong 80/443 duoc mo (HTTP-01 can cong 80).
 
-ninicakes.vn {
+# --- Trang khach hang ---
+tiembanhninicakes.work.gd {
+	# email de Let's Encrypt bao khi sap het han (tuy chon):
+	# tls you@email.vn
 	reverse_proxy customer-web:80
 }
 
-www.ninicakes.vn {
-	redir https://ninicakes.vn{uri} permanent
-}
-
-# Trang quan tri. Can che them basic_auth o duoi de khong ai do duoc mat khau admin.
-quantri.ninicakes.vn {
+# --- Trang quan tri ---
+adminninicakes.duckdns.org {
 	reverse_proxy admin-web:80
 
-	# Them 2 dong nay (bo dau #), tao hash bang lenh o cuoi file:
+	# NEN bat: ten mien nay ai cung doan duoc, them mot lop khoa truoc mat dang nhap.
+	# Buoc 1: tao hash
+	#   docker compose -f docker-compose.yml -f docker-compose.prod.yml exec caddy caddy hash-password
+	# Buoc 2: dan hash vao cho <HASH>, bo 3 dau # o 3 dong duoi
 	# basic_auth {
-	# 	admin $2a$14$...hash...
+	# 	admin <HASH>
 	# }
 }
-
-# Tao hash mat khau:  docker compose exec caddy caddy hash-password

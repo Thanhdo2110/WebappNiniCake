@@ -42,6 +42,14 @@ export function createApp() {
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
 
+  /* JSON API không được phép cache. Thiếu Cache-Control thì browser/proxy nhà mạng
+     (chế độ tiết kiệm dữ liệu trên điện thoại) có thể dùng lại response cũ mà không
+     revalidate — khách ở lại thấy danh mục rỗng mãi dù server đã có dữ liệu. */
+  app.use('/api/', (_req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+  });
+
   const globalLimiter = rateLimit({
     windowMs: 60 * 1000,
     limit: 400,
