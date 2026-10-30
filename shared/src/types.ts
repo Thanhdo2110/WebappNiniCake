@@ -61,19 +61,6 @@ export interface AddressDTO {
   isDefault: boolean;
 }
 
-export interface AddressInput {
-  fullName: string;
-  phone: string;
-  addressLine: string;
-  ward?: string;
-  district?: string;
-  city: string;
-  lat?: number | null;
-  lng?: number | null;
-  mapsUrl?: string | null;
-  isDefault?: boolean;
-}
-
 export interface WishlistItemDTO {
   id: number;
   name: string;
@@ -122,6 +109,11 @@ export interface ProductListDTO {
   ratingAvg: number;
   ratingCount: number;
   imageUrl: string | null;
+  /** Biến thể active rẻ nhất — để "Thêm vào giỏ" chạy được ngay từ danh sách.
+     Null khi sản phẩm không còn biến thể nào đang bật, khi đó không cho thêm nhanh. */
+  defaultVariantId: number | null;
+  /** Giá cao nhất trong các biến thể active. Lớn hơn `price` nghĩa là nhiều mức giá. */
+  priceMax: number;
   createdAt: string;
 }
 
@@ -318,12 +310,6 @@ export interface RecentOrderDTO {
 }
 
 /* ============ Đánh giá bài ============ */
-export interface CouponValidationDTO {
-  valid: boolean;
-  discount: number;
-  reason?: string;
-}
-
 /* ============ Nội dung / cài đặt ============ */
 export interface BannerDTO {
   id: number;
@@ -369,15 +355,6 @@ export interface StoreSettingsDTO {
   payosEnabled?: boolean;
 }
 
-export interface ContactInput {
-  name: string;
-  email: string;
-  phone?: string;
-  subject?: string;
-  content: string;
-  imageUrl?: string;
-}
-
 export interface MessageDTO {
   id: number;
   name: string;
@@ -415,24 +392,6 @@ export interface DashboardDTO {
   topProducts: TopProductDTO[];
   recentOrders: RecentOrderDTO[];
   revenueSeries: RevenuePointDTO[];
-}
-
-export interface RevenueSummaryDTO {
-  revenue: number;
-  orders: number;
-  from: string;
-  to: string;
-}
-
-/* ============ Trang chủ ============ */
-export interface HomeDTO {
-  banners: BannerDTO[];
-  categories: CategoryDTO[];
-  featured: ProductListDTO[];
-  seasonal: ProductListDTO[];
-  bestsellers: ProductListDTO[];
-  topReviews: Array<ReviewDTO & { product: { id: number; name: string; slug: string } }>;
-  settings: StoreSettingsDTO;
 }
 
 /* ============ Quản trị sản phẩm ============ */

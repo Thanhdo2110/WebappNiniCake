@@ -1,6 +1,7 @@
 /** Đăng nhập khu quản trị */
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { isSafeInternalPath } from '@shared';
 import { useAdminAuth } from '../hooks/auth';
 import { errMessage } from '../lib/api';
 import { useToast } from '../hooks/toast';
@@ -20,7 +21,7 @@ export default function LoginPage() {
       await signIn(email, password);
       toast('Đăng nhập thành công. Chào quay lại Nini!', 'ok');
       const next = location.state?.next;
-      navigate(next && next.startsWith('/') ? next : '/', { replace: true });
+      navigate(isSafeInternalPath(next) ? next : '/', { replace: true });
     } catch (e) {
       toast(errMessage(e, 'Đăng nhập không thành công.'), 'err');
     } finally {

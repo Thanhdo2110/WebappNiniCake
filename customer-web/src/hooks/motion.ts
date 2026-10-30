@@ -79,7 +79,10 @@ export function useTilt<T extends HTMLElement>(max = 7, scale = 1.015) {
       el.style.setProperty('--ry', '0deg');
       el.style.setProperty('--mx', '50%');
       el.style.setProperty('--my', '50%');
-      el.style.setProperty('--lift', '0');
+      /* --lift được nạp vào scale() của .tilt, nên giá trị trung tính là 1 chứ không phải 0.
+         Để 0 thì thẻ co lại thành 0x0 — cảm ứng không có pointermove nên không bao giờ
+         phục hồi, và trên điện thoại toàn bộ lưới sản phẩm biến mất dù DOM vẫn còn. */
+      el.style.setProperty('--lift', '1');
     };
 
     const onMove = (event: PointerEvent) => {

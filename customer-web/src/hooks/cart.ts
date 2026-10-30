@@ -11,6 +11,13 @@ export function useCart() {
   });
 }
 
+/** Sự kiện báo để header nảy "+1" khi khách thêm giỏ từ danh sách. */
+export const CART_ADDED_EVENT = 'nc:cart-added';
+
+export function announceCartAdded(name: string) {
+  window.dispatchEvent(new CustomEvent(CART_ADDED_EVENT, { detail: { name } }));
+}
+
 export function useAddToCart() {
   const qc = useQueryClient();
   return useMutation({

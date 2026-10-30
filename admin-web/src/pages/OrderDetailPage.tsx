@@ -36,7 +36,8 @@ function orderMapsHref(o: OrderDTO): string {
   if (o.lat !== null && o.lng !== null) {
     return `https://www.google.com/maps/search/?api=1&query=${o.lat.toFixed(6)},${o.lng.toFixed(6)}`;
   }
-  const text = [o.addressLine, o.ward, o.district, o.city].filter(Boolean).join(', ');
+  // city vẫn lưu trong DB nhưng không in: tiệm chỉ giao nội thành, khách không nhập dòng này
+  const text = [o.addressLine, o.ward, o.district].filter(Boolean).join(', ');
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(text)}`;
 }
 
@@ -233,7 +234,7 @@ export default function OrderDetailPage() {
             <b className="small">{o.recipientName}</b> <span className="small muted">{o.recipientPhone}</span>
             {o.deliveryType === 'DELIVERY' && o.addressLine && (
               <div className="small muted" style={{ marginTop: 4 }}>
-                {o.addressLine}{o.ward ? `, ${o.ward}` : ''}{o.district ? `, ${o.district}` : ''}{o.city ? `, ${o.city}` : ''}
+                {o.addressLine}{o.ward ? `, ${o.ward}` : ''}{o.district ? `, ${o.district}` : ''}
               </div>
             )}
             {o.deliveryType === 'DELIVERY' && o.addressLine && (

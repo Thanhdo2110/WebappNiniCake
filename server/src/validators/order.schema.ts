@@ -15,7 +15,8 @@ const addressSnapshot = z.object({
 
 export const checkoutSchema = z
   .object({
-    items: z.undefined(),
+    /** Bỏ trống = mua cả giỏ. Có giá trị = chỉ đặt những dòng giỏ hàng được chọn. */
+    itemIds: z.array(z.number().int().positive()).min(1).max(100).optional(),
     couponCode: z.string().trim().max(30).optional().or(z.literal('')),
     deliveryType: z.enum(['DELIVERY', 'PICKUP']),
     deliveryDate: z

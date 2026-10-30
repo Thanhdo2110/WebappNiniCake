@@ -68,7 +68,3 @@ export const staffCreateSchema = z.object({
   password: z.string().min(8, 'Mật khẩu cần ít nhất 8 ký tự').max(72),
   role: z.enum(['STAFF', 'ADMIN']),
 });
-
-export const roleParamSchema = z.object({
-  role: z.enum(['STAFF', 'CUSTOMER']),
-});

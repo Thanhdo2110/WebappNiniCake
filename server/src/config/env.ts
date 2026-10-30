@@ -28,13 +28,6 @@ export const envs = {
     maxMb: Number(env.MAX_UPLOAD_MB || 5),
     cloudinaryUrl: env.CLOUDINARY_URL || '',
   },
-  mail: {
-    host: env.MAIL_HOST || '',
-    port: Number(env.MAIL_PORT || 465),
-    user: env.MAIL_USER || '',
-    pass: env.MAIL_PASS || '',
-    from: env.MAIL_FROM || 'Nini Cakes <no-reply@ninicakes.vn>',
-  },
   payos: {
     clientId: env.PAYOS_CLIENT_ID || '',
     apiKey: env.PAYOS_API_KEY || '',
@@ -45,8 +38,6 @@ export const envs = {
     publicUrl: (env.PUBLIC_URL || '').replace(/\/+$/, ''),
   },
   seedSampleData: (env.SEED_SAMPLE_DATA || 'true') === 'true',
-  adminEmail: env.ADMIN_EMAIL || 'admin@ninicakes.vn',
-  adminPassword: env.ADMIN_PASSWORD || 'Admin@123',
 };
 
 /** Chỉ bật khi có đủ cả ba key và một URL công khai để PayOS còn quay về. */
@@ -75,5 +66,3 @@ export function assertProductionSecrets() {
     );
   }
 }
-
-export type Envs = typeof envs;

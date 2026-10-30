@@ -83,14 +83,6 @@ export async function get<T>(url: string, params?: Record<string, unknown>): Pro
   return res.data.data;
 }
 
-export async function getWithMessage<T>(
-  url: string,
-  params?: Record<string, unknown>
-): Promise<{ data: T; message?: string }> {
-  const res = await instance.get<ApiSuccess<T>>(url, { params });
-  return { data: res.data.data, message: res.data.message };
-}
-
 export async function post<T>(url: string, body?: unknown): Promise<{ data: T; message?: string }> {
   const res = await instance.post<ApiSuccess<T>>(url, body ?? {});
   return { data: res.data.data, message: res.data.message };

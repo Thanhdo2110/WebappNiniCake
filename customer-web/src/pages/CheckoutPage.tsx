@@ -2,7 +2,7 @@
     thanh toán, mã giảm giá, tóm tắt dính + CTA mobile. */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Banknote, CreditCard, Lock, MapPin, Phone, ShieldCheck, Store, Ticket } from 'lucide-react';
@@ -29,8 +29,24 @@ export default function CheckoutPage() {
   const addressesQ = useQuery({ queryKey: ['addresses'], queryFn: () => get<AddressDTO[]>('/addresses') });
   const settingsQ = useQuery({ queryKey: ['settings'], queryFn: () => get<StoreSettingsDTO>('/settings') });
 
-  const items = cartQ.data?.items || [];
-  const subtotal = cartQ.data?.subtotal ?? 0;
+  /* ?items=12,15 → khách chỉ đặt vài dòng đã chọn ở giỏ hàng, không phải cả giỏ.
+     Phải kiểm tra sự có mặt của param trước khi split: `''.split(',')` trả ['']
+     và Number('') ra 0, nếu lọc mỗi isInteger thì giỏ rỗng sẽ bị coi là
+     "đã chọn id 0" — trang thanh toán hiện trống dù khách vừa thêm món. */
+  const [searchParams] = useSearchParams();
+  const itemsParam = searchParams.get('items');
+  const pickedIds = useMemo(
+    () => (itemsParam
+      ? itemsParam.split(',').map((s) => Number(s.trim())).filter((n) => Number.isInteger(n) && n > 0)
+      : []),
+    [itemsParam]
+  );
+  const allCartItems = cartQ.data?.items || [];
+  const items = pickedIds.length ? allCartItems.filter((it) => pickedIds.includes(it.id)) : allCartItems;
+  const partial = pickedIds.length > 0 && items.length < allCartItems.length;
+  const subtotal = partial
+    ? items.reduce((sum, it) => sum + it.lineTotal, 0)
+    : cartQ.data?.subtotal ?? 0;
 
   /* Form state */
   const [deliveryType, setDeliveryType] = useState<'DELIVERY' | 'PICKUP'>('DELIVERY');
@@ -105,6 +121,8 @@ export default function CheckoutPage() {
         deliveryDate,
         timeSlot,
         paymentMethod,
+        /* Chỉ gửi khi khách chọn đặt lẻ — để trống thì server lấy cả giỏ như trước */
+        ...(partial ? { itemIds: items.map((it) => it.id) } : {}),
         note: note || undefined,
         couponCode: appliedCoupon?.code || undefined,
         ...recipientData(),
@@ -223,7 +241,7 @@ export default function CheckoutPage() {
                         <span>
                           <b className="small">{a.fullName} • {a.phone}</b>
                           <span className="small muted addr-card__line">
-                            {a.addressLine}{a.ward && `, ${a.ward}`}{a.district && `, ${a.district}`}, {a.city}
+                            {a.addressLine}{a.ward && `, ${a.ward}`}{a.district && `, ${a.district}`}
                           </span>
                           {a.lat !== null && a.lng !== null && (
                             <span className="addr-card__pin"><MapPin size={11} /> Đã ghim vị trí chính xác</span>
@@ -354,6 +372,12 @@ export default function CheckoutPage() {
 
           <Reveal as="aside" from="right" className="card pad summary-card">
             <span className="eyebrow no-rule">Tóm tắt đơn</span>
+            {partial && (
+              <p className="small muted" style={{ marginTop: 6 }}>
+                Bạn đang đặt lẻ {items.length} trong {allCartItems.length} dòng của giỏ hàng.
+                {' '}<Link to="/gio-hang">Chọn lại món</Link>
+              </p>
+            )}
             <ul className="summary-list">
               {items.map((it) => (
                 <li key={it.id}>

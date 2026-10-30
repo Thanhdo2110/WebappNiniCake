@@ -1,6 +1,12 @@
 import { prisma } from '../config/prisma.js';
 import type { Prisma } from '@prisma/client';
 
+/** Biến thể đang bật, rẻ nhất trước — đủ để DTO tính defaultVariantId và priceMax.
+    ProductBody giới hạn tối đa 10 biến thể nên nạp hết cũng không nặng. */
+const listVariantInclude = {
+  variants: { where: { isActive: true }, orderBy: { price: 'asc' as const } },
+};
+
 export const productRepository = {
   /** Danh sách sản phẩm (khách + admin) */
   async listProducts(params: {
@@ -30,7 +36,7 @@ export const productRepository = {
         include: {
           category: { select: { name: true, slug: true } },
           images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }], take: 1 },
-          variants: { where: { isActive: true }, orderBy: { price: 'asc' }, take: 1 },
+          ...listVariantInclude,
         },
       }),
       prisma.product.count({ where: params.where }),
@@ -73,6 +79,7 @@ export const productRepository = {
       include: {
         images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }], take: 1 },
         category: { select: { name: true, slug: true } },
+        ...listVariantInclude,
       },
     });
   },
@@ -84,6 +91,7 @@ export const productRepository = {
       include: {
         images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }], take: 1 },
         category: { select: { name: true, slug: true } },
+        ...listVariantInclude,
       },
     });
   },
@@ -95,6 +103,7 @@ export const productRepository = {
       include: {
         images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }], take: 1 },
         category: { select: { name: true, slug: true } },
+        ...listVariantInclude,
       },
     });
   },
@@ -106,6 +115,7 @@ export const productRepository = {
       include: {
         images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }], take: 1 },
         category: { select: { name: true, slug: true } },
+        ...listVariantInclude,
       },
     });
   },

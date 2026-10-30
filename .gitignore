@@ -6,12 +6,16 @@ coverage/
 .env.local
 *.log
 .DS_Store
-server/uploads/
-!server/uploads/.gitkeep
+
+# Ảnh khách upload — không theo dõi nội dung. Không cần .gitkeep:
+# app.ts tự mkdir UPLOAD_DIR lúc khởi động.
+server/uploads/*
 server/prisma/*.db
 .vite/
 .turbo/
-scripts/shots/
+*.tsbuildinfo
 
-# Hồ sơ Chrome headless dùng cho scripts/shot.mjs
-scripts/.chrome-shot-profile/
+# Artefact sinh ra bởi scripts/shot.mjs và Chrome headless
+scripts/shots/
+scripts/shots-baseline/
+scripts/.chrome-*/

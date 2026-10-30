@@ -3,7 +3,6 @@ import { contentRepository as repo } from '../repositories/content.repository.js
 import { fail } from '../utils/http.js';
 import { userToDTO, settingsToDTO } from '../utils/dto.js';
 import { buildMeta } from '../utils/pagination.js';
-import { ensureUniqueSlug } from '../utils/slug.js';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../config/prisma.js';
 import type { ProfileSchemaT, AddressZod } from '../validators/auth-helpers.js';
@@ -153,9 +152,3 @@ export const userService = {
     },
   },
 };
-
-export function latestStory() {
-  return repo.latestStory();
-}
-
-export { ensureUniqueSlug };

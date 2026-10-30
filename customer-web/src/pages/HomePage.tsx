@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronLeft, ChevronRight, Clock, Gift, MapPin, Phone, Quote, RotateCcw, Sparkles, Truck } from 'lucide-react';
 import { useHome } from '../hooks/catalog';
+import { isSafeInternalPath } from '@shared';
 import { CardSkeleton, EmptyState, Reveal, SectionTitle, Stagger, Stars } from '../components/ui';
 import { ProductCard } from '../components/ProductCard';
 import { usePointerParallax, prefersReducedMotion } from '../hooks/motion';
@@ -233,7 +234,7 @@ export default function HomePage() {
                     {b.subtitle && <p>{b.subtitle}</p>}
                     {b.linkUrl && (
                       <Link
-                        to={b.linkUrl.startsWith('/') ? b.linkUrl : '/banh'}
+                        to={isSafeInternalPath(b.linkUrl) ? b.linkUrl : '/banh'}
                         className="btn btn-gold"
                         style={{ marginTop: 16 }}
                       >

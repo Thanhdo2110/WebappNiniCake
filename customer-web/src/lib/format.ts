@@ -35,7 +35,3 @@ export function addDays(days: number, from = new Date()): Date {
   d.setDate(d.getDate() + days);
   return d;
 }
-
-export function sanitizeHtmlText(text: string): string {
-  return text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}

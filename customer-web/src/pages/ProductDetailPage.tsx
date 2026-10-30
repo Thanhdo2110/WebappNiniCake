@@ -122,12 +122,15 @@ export default function ProductDetailPage() {
   /* Ghi vào "đã xem gần đây" cho rail cá nhân hóa ở trang chủ */
   useEffect(() => {
     if (!p) return;
+    const activeVariants = (p.variants || []).filter((v) => v.isActive);
     const asList: ProductListDTO = {
       id: p.id, name: p.name, slug: p.slug, shortDescription: p.shortDescription,
       categoryId: p.categoryId, categoryName: p.categoryName ?? null, price: p.price,
       compareAtPrice: p.compareAtPrice, isFeatured: p.isFeatured, isSeasonal: p.isSeasonal,
       isActive: p.isActive, soldCount: p.soldCount, ratingAvg: p.ratingAvg, ratingCount: p.ratingCount,
       imageUrl: p.imageUrl, createdAt: new Date().toISOString(),
+      defaultVariantId: activeVariants.length ? activeVariants[0].id : null,
+      priceMax: activeVariants.length ? Math.max(...activeVariants.map((v) => v.price)) : p.price,
     };
     pushRecentlyViewed(asList);
   }, [p]);

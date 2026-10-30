@@ -204,7 +204,7 @@ export default function OrderDetailPage() {
             <div className="small">{o.recipientName}{o.recipientPhone ? ` • ${o.recipientPhone}` : ''}</div>
             {!isPickup && o.addressLine && (
               <div className="small muted recipient-addr">
-                {o.addressLine}{o.ward ? `, ${o.ward}` : ''}{o.district ? `, ${o.district}` : ''}{o.city ? `, ${o.city}` : ''}
+                {o.addressLine}{o.ward ? `, ${o.ward}` : ''}{o.district ? `, ${o.district}` : ''}
               </div>
             )}
             {!isPickup && (o.mapsUrl || (o.lat !== null && o.lng !== null)) && (
@@ -288,7 +288,7 @@ function InvoicePrint({ order, settings }: { order: OrderDTO; settings: StoreSet
       <table className="table" style={{ fontSize: 12 }}>
         <tbody>
           <tr><td>Người nhận</td><td>{order.recipientName}{order.recipientPhone ? ` — ${order.recipientPhone}` : ''}</td></tr>
-          {order.deliveryType === 'DELIVERY' && <tr><td>Địa chỉ</td><td>{order.addressLine}{order.ward ? `, ${order.ward}` : ''}{order.city ? `, ${order.city}` : ''}</td></tr>}
+          {order.deliveryType === 'DELIVERY' && <tr><td>Địa chỉ</td><td>{order.addressLine}{order.ward ? `, ${order.ward}` : ''}</td></tr>}
           <tr><td>Hình thức</td><td>{DELIVERY_TYPE_LABEL[order.deliveryType]} • {formatDate(order.deliveryDate)} • {order.timeSlot}</td></tr>
         </tbody>
       </table>

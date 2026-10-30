@@ -1,7 +1,22 @@
 **/node_modules
-**/dist
 **/.vite
-server/uploads
-.git
-# Secret không được nằm trong image layer (kể cả server/.env cho dev host)
 **/.env
+**/*.tsbuildinfo
+.git
+
+# Không Dockerfile nào COPY những mục này; loại chúng để build context nhẹ.
+# scripts/ một mình đã chiếm 473 MB trên máy dev.
+server/uploads
+scripts
+docs
+.qoder
+.zhanlu
+*.md
+docker-compose*.yml
+Caddyfile
+
+# dist của hai SPA do image tự build ra.
+# Cố ý KHÔNG dùng `**/dist`: pattern đó sẽ âm thầm loại server/dist khỏi mọi COPY,
+# khiến một lần compile API trong tương lai cho ra runtime stage rỗng không báo lỗi.
+customer-web/dist
+admin-web/dist

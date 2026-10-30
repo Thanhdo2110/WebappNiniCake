@@ -79,8 +79,3 @@ export function useAuth(): AuthContextValue {
   if (!ctx) throw new Error('useAuth phải dùng trong AuthProvider');
   return ctx;
 }
-
-/** Các vai trò quản trị — dùng để ẩn tính năng đặt đánh giá khi là nhân viên */
-export function isStaffLike(role: string | undefined): boolean {
-  return role === 'ADMIN' || role === 'STAFF';
-}

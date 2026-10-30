@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma.js';
+import crypto from 'node:crypto';
 
 /** Giỏ hàng theo user hoặc token (cookie NC_VID) */
 export const cartRepository = {
@@ -18,16 +19,23 @@ export const cartRepository = {
     if (userId) {
       const byUser = await this.findByUser(userId);
       if (byUser) return byUser;
+      /* Chỉ nhận giỏ chưa có chủ, và hủy token khi nhận — xem cart.middleware.ts.
+         Nếu bỏ qua điều kiện userId: null thì cookie sót lại sau đăng xuất sẽ
+         chuyển chủ giỏ hàng của người khác. */
       const byToken = await this.findByToken(token);
-      if (byToken) return prisma.cart.update({ where: { id: byToken.id }, data: { userId }, include: { items: true } });
-      return prisma.cart.create({ data: { token, userId }, include: { items: true } });
+      if (byToken && byToken.userId === null) {
+        return prisma.cart.update({ where: { id: byToken.id }, data: { userId, token: null }, include: { items: true } });
+      }
+      return prisma.cart.create({ data: { userId }, include: { items: true } });
     }
     return this.ensureGuest(token);
   },
   async ensureGuest(token: string) {
     const existed = await this.findByToken(token);
-    if (existed) return existed;
-    return prisma.cart.create({ data: { token }, include: { items: true } });
+    if (existed && existed.userId === null) return existed;
+    /* Token trỏ tới giỏ của user (dữ liệu cũ còn giữ token sau khi gán chủ) —
+       tuyệt đối không giao giỏ đó cho khách vãng lai. Lập một giỏ khách mới. */
+    return prisma.cart.create({ data: { token: crypto.randomUUID() }, include: { items: true } });
   },
 
   createItem: (cartId: number, variantId: number, quantity: number, unitPrice: number, options: unknown) =>

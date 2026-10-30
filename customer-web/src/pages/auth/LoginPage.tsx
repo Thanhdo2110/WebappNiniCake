@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, PhoneCall } from 'lucide-react';
 import type { PublicUserDTO } from '@shared/types';
+import { isSafeInternalPath } from '@shared';
 import { post, errMessage, TOKEN_KEY } from '../../lib/api';
 import { AuthShell } from '../../components/AuthShell';
 import { PasswordInput } from '../../components/ui';
@@ -36,7 +37,7 @@ export default function LoginPage() {
       qc.invalidateQueries({ queryKey: ['cart'] });
       toast(r.message || 'Đăng nhập thành công!', 'ok');
       const next = location.state?.next;
-      navigate(next && next.startsWith('/') ? next : '/tai-khoan', { replace: true });
+      navigate(isSafeInternalPath(next) ? next : '/tai-khoan', { replace: true });
     },
     onError: (e) => toast(errMessage(e, 'Số điện thoại hoặc mật khẩu chưa đúng.'), 'err'),
   });

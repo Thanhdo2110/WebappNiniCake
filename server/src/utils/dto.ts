@@ -61,6 +61,10 @@ export function userToDTO(u: UserLike): PublicUserDTO {
 
 export function productToListDTO(p: ProductWithRelations): ProductListDTO {
   const category = 'category' in p ? (p.category as { name: string; slug: string } | null) : null;
+  /* Danh sách chỉ nạp biến thể đang bật, nên phần tử đầu là rẻ nhất.
+     Bốn ray ở trang chủ không nạp variants → mảng rỗng → không cho thêm nhanh. */
+  const activeVariants = (p.variants || []).filter((v) => v.isActive);
+  const variantPrices = activeVariants.map((v) => v.price);
   return {
     id: p.id,
     name: p.name,
@@ -77,6 +81,8 @@ export function productToListDTO(p: ProductWithRelations): ProductListDTO {
     ratingAvg: p.ratingAvg,
     ratingCount: p.ratingCount,
     imageUrl: primaryImage(p.images as { url: string | null; isPrimary: boolean; sortOrder: number }[]),
+    defaultVariantId: activeVariants.length ? activeVariants[0].id : null,
+    priceMax: variantPrices.length ? Math.max(...variantPrices) : p.price,
     createdAt: p.createdAt.toISOString(),
   };
 }

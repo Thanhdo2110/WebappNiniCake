@@ -10,7 +10,7 @@ import {
 import type { ProductListDTO } from '@shared/types';
 import { MAX_CART_QUANTITY } from '@shared/constants';
 import { useAuth } from '../hooks/auth';
-import { useCart, useRemoveCartItem, useUpdateCartItem } from '../hooks/cart';
+import { CART_ADDED_EVENT, useCart, useRemoveCartItem, useUpdateCartItem } from '../hooks/cart';
 import { useCategories, useSettings } from '../hooks/catalog';
 import { useScrolled } from '../hooks/motion';
 import { useBodyScrollLock, useClickOutside, useFocusTrap } from '../hooks/a11y';
@@ -314,6 +314,16 @@ export function Header() {
   const closeTimer = useRef<number | null>(null);
 
   const count = (cart?.items ?? []).reduce((sum, it) => sum + it.quantity, 0);
+
+  /* Mỗi lần thêm giỏ từ danh sách: icon giỏ nảy lên và chữ "+1" bay lên.
+     Đổi key để React dựng lại phần tử, nhờ đó animation chạy lại từ đầu. */
+  const [bumpKey, setBumpKey] = useState(0);
+  useEffect(() => {
+    const onAdded = () => setBumpKey((n) => n + 1);
+    window.addEventListener(CART_ADDED_EVENT, onAdded);
+    return () => window.removeEventListener(CART_ADDED_EVENT, onAdded);
+  }, []);
+
   const firstName = user?.fullName?.trim().split(/\s+/).pop() || 'Tài khoản';
   const freeShip = settings?.freeShippingMinVnd;
 
@@ -462,7 +472,8 @@ export function Header() {
               onClick={() => setCartOpen(true)}
             >
               <ShoppingBasket size={19} />
-              {count > 0 && <span className="cart-badge pop" key={count}>{count}</span>}
+              {count > 0 && <span className="cart-badge pop" key={`n-${count}`}>{count}</span>}
+              {bumpKey > 0 && <span className="cart-plusone" key={`p-${bumpKey}`} aria-hidden>+1</span>}
             </button>
 
             {logged ? (

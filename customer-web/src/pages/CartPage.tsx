@@ -42,6 +42,24 @@ export default function CartPage() {
 
   const items = cart?.items || [];
   const subtotal = cart?.subtotal || 0;
+
+  /* Chọn một phần giỏ để đặt. Lưu tập "bỏ chọn" thay vì "chọn", để món thêm sau
+     mặc nhiên vẫn được chọn. Tập rỗng = mua tất cả → không gửi itemIds, hành vi
+     y hệt như trước. */
+  const [unpicked, setUnpicked] = useState<Set<number>>(new Set());
+  const selected = items.filter((it) => !unpicked.has(it.id));
+  const allSelected = selected.length === items.length;
+  const selectedSubtotal = selected.reduce((sum, it) => sum + it.lineTotal, 0);
+  const togglePick = (id: number) =>
+    setUnpicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const goCheckout = () =>
+    navigate(allSelected ? '/thanh-toan' : `/thanh-toan?items=${selected.map((it) => it.id).join(',')}`);
+
   const eligibleCheckout = logged;
 
   /* Gợi ý mua kèm: bánh bán chạy, loại trừ những gì đã trong giỏ */
@@ -107,12 +125,22 @@ export default function CartPage() {
                   {items.map((it) => {
                     const productTo = it.productSlug ? `/san-pham/${it.productSlug}` : '/banh';
                     return (
-                      <div key={it.id} className="cart-line">
-                        <Link to={productTo} className="cart-line__media img-frame" aria-label={`Xem ${it.productName}`}>
+                      <div key={it.id} className={`cart-line${unpicked.has(it.id) ? ' is-unpicked' : ''}`}>
+                        <label className="cart-line__pick">
+                          <input
+                            type="checkbox"
+                            checked={!unpicked.has(it.id)}
+                            onChange={() => togglePick(it.id)}
+                            aria-label={`Chọn ${it.productName} để đặt`}
+                          />
+                        </label>
+
+                        <div className="cart-line__media img-frame">
                           <img src={imageUrl(it.imageUrl, it.productName)} onError={imgFallback(it.productName)} alt={it.productName} loading="lazy" />
-                        </Link>
+                        </div>
 
                         <div className="cart-line__info">
+                          {/* Link phủ toàn dòng: chạm chỗ nào cũng mở được trang chi tiết */}
                           <Link to={productTo} className="cart-line__name">{it.productName}</Link>
                           <div className="small muted">{it.variantName}</div>
                           {it.options?.messageOnCake && (
@@ -169,8 +197,12 @@ export default function CartPage() {
                     <ArrowLeft size={14} /> Tiếp tục chọn bánh
                   </Link>
                   <div className="cart-panel__sum">
-                    <div className="small muted">Phí giao và khuyến mãi tính ở bước thanh toán.</div>
-                    <div className="cart-total">{formatVND(subtotal)}</div>
+                    <div className="small muted">
+                      {allSelected
+                        ? 'Phí giao và khuyến mãi tính ở bước thanh toán.'
+                        : `Đang chọn ${selected.length}/${items.length} dòng để đặt. Phí giao và khuyến mãi tính ở bước thanh toán.`}
+                    </div>
+                    <div className="cart-total">{formatVND(allSelected ? subtotal : selectedSubtotal)}</div>
                   </div>
                   <button type="button" className="btn btn-soft btn-sm" onClick={() => setConfirmClear(true)} title="Làm trống giỏ">
                     <Trash2 size={14} /> Xóa tất cả
@@ -180,16 +212,23 @@ export default function CartPage() {
 
               <aside className="card pad cart-aside">
                 <span className="eyebrow no-rule">Tạm tính</span>
-                <div className="cart-total cart-total--big">{formatVND(subtotal)}</div>
+                <div className="cart-total cart-total--big">{formatVND(allSelected ? subtotal : selectedSubtotal)}</div>
                 <p className="small muted">
-                  {items.reduce((n, it) => n + it.quantity, 0)} phần bánh • {items.length} dòng đơn.
+                  {allSelected
+                    ? `${items.reduce((n, it) => n + it.quantity, 0)} phần bánh • ${items.length} dòng đơn.`
+                    : `${selected.reduce((n, it) => n + it.quantity, 0)} phần bánh • ${selected.length}/${items.length} dòng được chọn đặt.`}
                 </p>
+                {!allSelected && (
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setUnpicked(new Set())}>
+                    <RotateCcw size={14} /> Chọn lại tất cả
+                  </button>
+                )}
 
                 <ShipProgress min={settings?.freeShippingMinVnd} subtotal={subtotal} />
 
                 <div className="cart-aside__cta">
                   {eligibleCheckout ? (
-                    <button type="button" className="btn btn-primary btn-lg btn-block" onClick={() => navigate('/thanh-toan')}>
+                    <button type="button" className="btn btn-primary btn-lg btn-block" onClick={goCheckout}>
                       Đặt bánh ngay <ArrowRight size={16} className="btn-ico" />
                     </button>
                   ) : (
@@ -229,12 +268,13 @@ export default function CartPage() {
             <div className="mobile-buy-bar is-show">
               <div className="mobile-buy-bar__info">
                 <span className="mobile-buy-bar__name">
-                  Tạm tính • {items.reduce((n, it) => n + it.quantity, 0)} phần
+                  Tạm tính • {selected.reduce((n, it) => n + it.quantity, 0)} phần
+                  {!allSelected && ` của ${selected.length}/${items.length} dòng`}
                 </span>
-                <b className="mobile-buy-bar__price">{formatVND(subtotal)}</b>
+                <b className="mobile-buy-bar__price">{formatVND(allSelected ? subtotal : selectedSubtotal)}</b>
               </div>
               {eligibleCheckout ? (
-                <button type="button" className="btn btn-primary" onClick={() => navigate('/thanh-toan')}>
+                <button type="button" className="btn btn-primary" onClick={goCheckout}>
                   Đặt bánh ngay <ArrowRight size={15} className="btn-ico" />
                 </button>
               ) : (

@@ -20,6 +20,8 @@ import type { Prisma } from '@prisma/client';
 
 interface CheckoutInput {
   couponCode?: string;
+  /** Bỏ trống = mua cả giỏ; có giá trị = chỉ đặt các dòng giỏ hàng được chọn */
+  itemIds?: number[];
   deliveryType: 'DELIVERY' | 'PICKUP';
   deliveryDate: string;
   timeSlot: string;
@@ -50,7 +52,17 @@ export const orderService = {
     if (!userId) throw fail('Vui lòng đăng nhập để hoàn tất đặt bánh.', 401);
 
     const cart = await cartRepository.findByUser(userId);
-    const cartItems = (cart?.items || []).filter((i) => i.variantId && i.quantity > 0);
+    const allItems = (cart?.items || []).filter((i) => i.variantId && i.quantity > 0);
+    if (!allItems.length) throw fail('Giỏ của quý khách đang trống.', 409);
+
+    /* Khách có thể chọn đặt lẻ vài món thay vì cả giỏ. Mã nào không khớp dòng
+       đang có thật trong giỏ là lỗi, không được âm thầm bỏ qua — nếu không thì
+       đơn tạo ra sẽ thiếu món mà khách tưởng đã đặt. */
+    const wanted = input.itemIds?.length ? [...new Set(input.itemIds)] : null;
+    const cartItems = wanted ? allItems.filter((i) => wanted.includes(i.id)) : allItems;
+    if (wanted && cartItems.length !== wanted.length) {
+      throw fail('Một vài món không còn trong giỏ. Quý khách vui lòng thử lại.', 409);
+    }
     if (!cartItems.length) throw fail('Giỏ của quý khách đang trống.', 409);
 
     // Tồn kho + giá server-side
@@ -233,7 +245,10 @@ export const orderService = {
       }
       /* Đơn chuyển khoản: GIỮ LẠI giỏ — khách còn quay lui kiểm tra hoặc trả sau.
          Giỏ chỉ dọn khi tiền thực sự về (markPaid / admin xác nhận). */
-      if (cart && input.paymentMethod === 'COD') await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+      /* Chỉ dọn đúng những món vừa đặt — khách chọn đặt lẻ thì phần còn lại
+         vẫn phải nằm nguyên trong giỏ. */
+      if (cart && input.paymentMethod === 'COD')
+        await tx.cartItem.deleteMany({ where: { id: { in: cartItems.map((i) => i.id) } } });
       return order;
     });
 

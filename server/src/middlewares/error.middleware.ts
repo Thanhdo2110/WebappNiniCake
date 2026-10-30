@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import { ApiError, fail } from '../utils/http.js';
+import { ApiError } from '../utils/http.js';
 import { ZodError } from 'zod';
 
 export function notFoundHandler(_req: Request, res: Response) {
@@ -52,5 +52,3 @@ export function errorHandler(err: unknown, _req: Request, res: Response, next: N
   console.error('[API][UnhandledError]', err);
   return res.status(500).json({ success: false, message: 'Có lỗi tại hệ thống. Xin quý khách vui lòng thử lại.' });
 }
-
-export const rush404 = () => fail('Không tìm thấy tài nguyên được yêu cầu.', 404);

@@ -226,7 +226,29 @@
 .soft-float { animation: nini-float 9s var(--ease-in-out) infinite; }
 .soft-glow { animation: nini-glow 7s var(--ease-in-out) infinite; }
 
-/* ---------- 11. Giảm chuyển động ---------- */
+/* ---------- 11. Phản hồi khi thêm nhanh vào giỏ ---------- */
+@keyframes nini-plusone {
+  0%   { opacity: 0; transform: translate3d(0, 6px, 0) scale(0.7); }
+  22%  { opacity: 1; transform: translate3d(0, -2px, 0) scale(1.06); }
+  100% { opacity: 0; transform: translate3d(0, -26px, 0) scale(0.94); }
+}
+.cart-plusone {
+  position: absolute;
+  top: -14px;
+  right: -12px;
+  z-index: 5;
+  pointer-events: none;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: var(--gold-deep);
+  color: var(--ivory);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  animation: nini-plusone 900ms var(--ease-out) forwards;
+}
+
+/* ---------- 12. Giảm chuyển động ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 1ms !important;

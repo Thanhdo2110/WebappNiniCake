@@ -11,8 +11,3 @@ export const roleParam = z.object({
 });
 
 export const moneyInt = z.number().int().min(0).max(1000000000);
-
-export const paginationQuery = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  perPage: z.coerce.number().int().min(1).max(50).default(12),
-});

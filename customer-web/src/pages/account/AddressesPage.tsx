@@ -177,7 +177,7 @@ export default function AddressesPage() {
               </div>
               <div className="small muted addr-row__line">
                 <MapPin size={13} />
-                <span>{a.addressLine}{a.ward ? `, ${a.ward}` : ''}{a.district ? `, ${a.district}` : ''}, {a.city}</span>
+                <span>{a.addressLine}{a.ward ? `, ${a.ward}` : ''}{a.district ? `, ${a.district}` : ''}</span>
               </div>
               {a.lat !== null && a.lng !== null && (
                 <a className="pin-chip" href={a.mapsUrl || mapsLink({ lat: a.lat, lng: a.lng })} target="_blank" rel="noreferrer">
@@ -201,7 +201,7 @@ export default function AddressesPage() {
         onClose={() => setRemoveTarget(null)}
         onConfirm={() => removeTarget && removeM.mutate(removeTarget.id)}
         title="Xóa địa chỉ này?"
-        message={removeTarget ? `${removeTarget.addressLine}${removeTarget.ward ? `, ${removeTarget.ward}` : ''}, ${removeTarget.city} sẽ bị xóa khỏi sổ địa chỉ.` : undefined}
+        message={removeTarget ? `${removeTarget.addressLine}${removeTarget.ward ? `, ${removeTarget.ward}` : ''} sẽ bị xóa khỏi sổ địa chỉ.` : undefined}
         confirmLabel="Xóa"
         cancelLabel="Giữ lại"
         danger

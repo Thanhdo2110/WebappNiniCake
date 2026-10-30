@@ -409,7 +409,7 @@ export const openApiSpec = {
     '/admin/staff': { post: { tags: ['Admin'], security: [{ bearerAuth: [] }], summary: 'Tạo nhân viên (admin)', responses: { '201': { description: 'OK' } } } },
     '/admin/coupons': { get: { tags: ['Admin'], security: [{ bearerAuth: [] }], summary: 'Danh sách mã giảm giá', responses: { '200': { description: 'OK' } } }, post: { tags: ['Admin'], security: [{ bearerAuth: [] }], summary: 'Tạo mã', responses: { '201': { description: 'OK' } } } },
     '/admin/reviews': { get: { tags: ['Admin'], security: [{ bearerAuth: [] }], summary: 'Duyệt/ẩn/phản hồi đánh giá', responses: { '200': { description: 'OK' } } } },
-    '/uploads': { post: { tags: ['Cart'], security: [{ bearerAuth: [] }], summary: 'Khách tải ảnh tham khảo cho bánh (multipart/form-data, field=file)', responses: { '200': { description: 'url ảnh' } } } },
+    '/uploads': { post: { tags: ['Cart & Orders'], security: [{ bearerAuth: [] }], summary: 'Khách tải ảnh tham khảo cho bánh (multipart/form-data, field=file)', responses: { '200': { description: 'url ảnh' } } } },
     '/uploads/attach': { post: { tags: ['Content'], summary: 'Khách vãng lai đính kèm ảnh bánh vào tin nhắn liên hệ (multipart/form-data, field=file; giới hạn 8 ảnh / 15 phút / IP)', responses: { '200': { description: 'url ảnh' }, '429': { description: 'Vượt giới hạn tải lên' } } } },
     '/admin/uploads': { post: { tags: ['Admin'], security: [{ bearerAuth: [] }], summary: 'Tải ảnh lên (multipart/form-data, field=file)', responses: { '200': { description: 'url ảnh' } } } },
     '/admin/dashboard': { get: { tags: ['Reports'], security: [{ bearerAuth: [] }], summary: 'Số liệu + biểu đồ dashboard 14 ngày', responses: { '200': { description: 'OK' } } } },

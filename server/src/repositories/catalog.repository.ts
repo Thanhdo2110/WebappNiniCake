@@ -1,5 +1,4 @@
 import { prisma } from '../config/prisma.js';
-import type { Prisma } from '@prisma/client';
 
 export const catalogRepository = {
   /* ============ Categories ============ */
@@ -83,5 +82,3 @@ export const catalogRepository = {
   },
   allergenById: (id: number) => prisma.allergen.findUnique({ where: { id } }),
 };
-
-export type CatalogCategoryWhere = Prisma.CategoryWhereInput;
